@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { Heart, ShoppingCart, Star, Clock, Shield, Sparkles, Plus, Minus, Loader } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Clock, Shield, Sparkles, Plus, Minus, Loader, Gift } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
 
@@ -229,13 +229,23 @@ const ProductDetails = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <button 
-                  onClick={handleOrderNow}
-                  className="btn btn-primary" 
-                  style={{ flex: 1, padding: '1rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                >
-                  Order Now
-                </button>
+                {activeScheduleId ? (
+                  <button 
+                    onClick={handleAddToSchedule}
+                    className="btn btn-primary" 
+                    style={{ flex: 1, padding: '1rem', fontSize: '1.1rem', background: 'var(--accent-secondary)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    <Gift size={20} /> Add to {activeScheduleRecipient}'s Plan
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleOrderNow}
+                    className="btn btn-primary" 
+                    style={{ flex: 1, padding: '1rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    Order Now
+                  </button>
+                )}
                 <button 
                   onClick={handleAddToCart}
                   className="btn btn-secondary" 

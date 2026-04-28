@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 // Pages
 import Home from './pages/Home';
@@ -25,6 +26,9 @@ import Cart from './pages/Cart';
 import UserProfile from './pages/UserProfile';
 
 import AutoGifting from './pages/AutoGifting';
+import MyOrders from './pages/MyOrders';
+import OrderTracking from './pages/OrderTracking';
+import GiftingAI from './pages/GiftingAI';
 
 // Dummy components for other routes to prevent errors
 const DummyPage = ({ title }) => (
@@ -104,9 +108,23 @@ const AppRoutes = () => {
           <AutoGifting />
         </ProtectedRoute>
       } />
+      <Route path="/gifting-ai" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <GiftingAI />
+        </ProtectedRoute>
+      } />
       
       {/* Other placeholders for NavLinks */}
-      <Route path="/orders" element={<DummyPage title="My Orders" />} />
+      <Route path="/orders" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <MyOrders />
+        </ProtectedRoute>
+      } />
+      <Route path="/tracking/:id" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <OrderTracking />
+        </ProtectedRoute>
+      } />
       <Route path="/wishlist" element={<DummyPage title="Wishlist" />} />
       <Route path="/wallet" element={<DummyPage title="Wallet" />} />
     </Routes>
@@ -120,11 +138,13 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
       <AuthProvider>
-        <ToastProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </ToastProvider>
+        <NotificationProvider>
+          <ToastProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </ToastProvider>
+        </NotificationProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );

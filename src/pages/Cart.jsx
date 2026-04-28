@@ -122,6 +122,8 @@ const Cart = () => {
 
     setProcessing(true);
     try {
+      const activeSchedule = JSON.parse(localStorage.getItem('activeSchedule'));
+      
       const orderPayload = {
         products: cartItems.map(item => ({ 
           productId: item.product._id || item.product, 
@@ -129,7 +131,9 @@ const Cart = () => {
         })),
         shippingAddress: address,
         paymentMethod: amountToPay === 0 ? "wallet" : "razorpay",
-        useWalletBalance: useWallet
+        useWalletBalance: useWallet,
+        isScheduledGift: activeSchedule?.isScheduledGift || false,
+        scheduleId: activeSchedule?.id || null
       };
 
       const orderRes = await axios.post('/payment/create', orderPayload);

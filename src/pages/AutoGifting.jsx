@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Plus, Gift, Clock, MapPin, ChevronRight, Loader, Edit2 } from 'lucide-react';
+import { Calendar, Plus, Gift, Clock, MapPin, ChevronRight, Loader, Edit2, Truck, XCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
 
@@ -327,10 +327,14 @@ const AutoGifting = () => {
                     </p>
                     {evt.selectedGifts.map((item, idx) => (
                         <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            <img src={item.product?.images?.[0] || 'https://via.placeholder.com/50'} alt={item.product?.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                            <img 
+                                src={item.product?.images?.[0]?.url || 'https://via.placeholder.com/50'} 
+                                alt={item.product?.name} 
+                                style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-light)' }} 
+                            />
                             <div>
-                                <p style={{ fontSize: '0.9rem', fontWeight: '500' }}>{item.product?.name}</p>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>₹{item.product?.pricing}</p>
+                                <p style={{ fontSize: '0.95rem', fontWeight: '600' }}>{item.product?.name}</p>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)' }}>₹{item.product?.basePrice}</p>
                             </div>
                         </div>
                     ))}
@@ -338,62 +342,101 @@ const AutoGifting = () => {
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {evt.selectedGifts && evt.selectedGifts.length > 0 ? (
-                    <button 
-                      onClick={async () => {
-                          // Clear cart and add this specific gift for checkout
-                          try {
-                              await axios.delete('/cart/clear');
-                              await axios.post('/cart/add', { 
-                                  productId: evt.selectedGifts[0].product._id, 
-                                  quantity: 1 
-                              });
-                              localStorage.setItem('activeSchedule', JSON.stringify({
-                                  id: evt._id,
-                                  recipient: evt.recipient?.name,
-                                  address: evt.deliveryAddress
-                              }));
-                              navigate('/cart');
-                          } catch (err) {
-                              error("Failed to prepare order.");
-                          }
-                      }}
-                      className="btn btn-primary" 
-                      style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', background: 'var(--success)', border: 'none' }}
-                    >
-                      <Gift size={16} /> Order This Gift Now
-                    </button>
+                  {evt.orderStatus === 'delivered' ? (
+                    <div style={{ background: 'var(--success)10', color: 'var(--success)', padding: '1rem', borderRadius: '8px', textAlign: 'center', border: '1px solid var(--success)30', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                        <CheckCircle size={18} /> Gift has been Delivered! 🎁
+                    </div>
+                  ) : ['ordered', 'processing', 'shipped'].includes(evt.orderStatus) ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ background: 'var(--accent-primary)10', color: 'var(--accent-primary)', padding: '0.8rem', borderRadius: '8px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '500', border: '1px solid var(--accent-primary)20' }}>
+                            Order is being processed
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <button 
+                                onClick={() => navigate(`/tracking/${evt.orderId}`)}
+                                className="btn btn-primary" 
+                                style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                <Truck size={16} /> Track
+                            </button>
+                            <button 
+                                onClick={async () => {
+                                    if(!window.confirm("Cancel this order and refund to wallet?")) return;
+                                    try {
+                                        await axios.post(`/payment/orders/${evt.orderId}/cancel`);
+                                        success("Order cancelled & refund credited.");
+                                        fetchEvents();
+                                    } catch (err) {
+                                        error("Failed to cancel order.");
+                                    }
+                                }} 
+                                className="btn btn-secondary" 
+                                style={{ flex: 1, color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                            >
+                                <XCircle size={16} /> Cancel Order
+                            </button>
+                        </div>
+                    </div>
                   ) : (
-                    <button 
-                        onClick={() => {
-                            localStorage.setItem('activeScheduleId', evt._id);
-                            localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
-                            success(`Choosing gift for ${evt.recipient?.name}`);
-                            navigate('/buyer-dashboard');
-                        }}
-                        className="btn btn-primary" 
-                        style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-                    >
-                        <Plus size={16} /> Choose Gift from Marketplace
-                    </button>
+                    <>
+                      {evt.selectedGifts && evt.selectedGifts.length > 0 ? (
+                        <button 
+                          onClick={async () => {
+                              try {
+                                  await axios.delete('/cart/clear');
+                                  await axios.post('/cart/add', { 
+                                      productId: evt.selectedGifts[0].product._id, 
+                                      quantity: 1 
+                                  });
+                                  localStorage.setItem('activeSchedule', JSON.stringify({
+                                      id: evt._id,
+                                      recipient: evt.recipient?.name,
+                                      address: evt.deliveryAddress,
+                                      isScheduledGift: true
+                                  }));
+                                  navigate('/cart');
+                              } catch (err) {
+                                  error("Failed to prepare order.");
+                              }
+                          }}
+                          className="btn btn-primary" 
+                          style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', background: 'var(--success)', border: 'none' }}
+                        >
+                          <Gift size={16} /> Order This Gift Now
+                        </button>
+                      ) : (
+                        <button 
+                            onClick={() => {
+                                localStorage.setItem('activeScheduleId', evt._id);
+                                localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
+                                success(`Choosing gift for ${evt.recipient?.name}`);
+                                navigate('/buyer-dashboard');
+                            }}
+                            className="btn btn-primary" 
+                            style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                            <Plus size={16} /> Choose Gift from Marketplace
+                        </button>
+                      )}
+                      
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <button 
+                            onClick={() => {
+                                localStorage.setItem('activeScheduleId', evt._id);
+                                localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
+                                navigate('/buyer-dashboard');
+                            }}
+                            className="btn btn-secondary" 
+                            style={{ flex: 1, fontSize: '0.85rem' }}
+                        >
+                            {evt.selectedGifts?.length > 0 ? 'Change Gift' : 'Browse'}
+                        </button>
+                        <button onClick={() => handleCancel(evt._id)} className="btn btn-secondary" style={{ flex: 1, color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)', fontSize: '0.85rem' }}>
+                            Cancel Plan
+                        </button>
+                      </div>
+                    </>
                   )}
-                  
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button 
-                        onClick={() => {
-                            localStorage.setItem('activeScheduleId', evt._id);
-                            localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
-                            navigate('/buyer-dashboard');
-                        }}
-                        className="btn btn-secondary" 
-                        style={{ flex: 1, fontSize: '0.85rem' }}
-                    >
-                        {evt.selectedGifts?.length > 0 ? 'Change Gift' : 'Browse'}
-                    </button>
-                    <button onClick={() => handleCancel(evt._id)} className="btn btn-secondary" style={{ flex: 1, color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)', fontSize: '0.85rem' }}>
-                        Cancel Plan
-                    </button>
-                  </div>
                 </div>
 
               </div>
