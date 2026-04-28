@@ -11,6 +11,16 @@ import AdminDashboard from './pages/AdminDashboard';
 import BuyerDashboard from './pages/BuyerDashboard';
 import CreatorDashboard from './pages/CreatorDashboard';
 
+// Creator Layout & Pages
+import CreatorLayout from './layouts/CreatorLayout';
+import CreatorDashboardHome from './pages/creator/CreatorDashboardHome';
+import CreatorProducts from './pages/creator/CreatorProducts';
+import AddProduct from './pages/creator/AddProduct';
+
+import AIChat from './pages/AIChat';
+import ProductDetails from './pages/ProductDetails';
+import Cart from './pages/Cart';
+
 // Dummy components for other routes to prevent errors
 const DummyPage = ({ title }) => (
   <div style={{ padding: '4rem', textAlign: 'center' }}>
@@ -44,11 +54,15 @@ const AppRoutes = () => {
       } />
       
       {/* Creator Routes */}
-      <Route path="/creator-dashboard/*" element={
+      <Route path="/creator-dashboard" element={
         <ProtectedRoute allowedRoles={['creator']}>
-          <CreatorDashboard />
+          <CreatorLayout />
         </ProtectedRoute>
-      } />
+      }>
+        <Route index element={<CreatorDashboardHome />} />
+        <Route path="products" element={<CreatorProducts />} />
+        <Route path="products/add" element={<AddProduct />} />
+      </Route>
 
       {/* Buyer Routes */}
       <Route path="/buyer-dashboard/*" element={
@@ -57,12 +71,26 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
+      {/* AI Routes */}
+      <Route path="/ai-chat" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <AIChat />
+        </ProtectedRoute>
+      } />
+      
+      {/* Shopping Routes */}
+      <Route path="/product/:id" element={<ProductDetails />} />
+      <Route path="/cart" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <Cart />
+        </ProtectedRoute>
+      } />
+      
       {/* Other placeholders for NavLinks */}
       <Route path="/orders" element={<DummyPage title="My Orders" />} />
       <Route path="/auto-gifting" element={<DummyPage title="Auto-Gifting" />} />
       <Route path="/wishlist" element={<DummyPage title="Wishlist" />} />
       <Route path="/wallet" element={<DummyPage title="Wallet" />} />
-      <Route path="/ai-chat" element={<DummyPage title="AI Gift Recommendations" />} />
     </Routes>
   );
 };
