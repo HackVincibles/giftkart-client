@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { LogOut, User as UserIcon, Gift, ShoppingCart, X, Bell, Trash2, Check, Sparkles, Calendar } from 'lucide-react';
+import { LogOut, User as UserIcon, Gift, ShoppingCart, X, Bell, Trash2, Check, Sparkles, Calendar, Heart } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -54,6 +54,9 @@ const Navbar = () => {
             </Link>
             <Link to="/auto-gifting" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }} className="hover:text-primary transition-colors">
               <Calendar size={16} color="var(--accent-secondary)" /> Calendar
+            </Link>
+            <Link to="/wishlist" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }} className="hover:text-primary transition-colors">
+              <Heart size={16} color="#ef4444" /> Wishlist
             </Link>
             <Link to="/orders" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500' }} className="hover:text-primary transition-colors">My Orders</Link>
           </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { User, Camera, Mail, MapPin, Wallet, CreditCard, ShieldCheck, Loader, Save, Edit2, X, Trash2, Send, Building, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { User, Camera, Mail, MapPin, Wallet, CreditCard, ShieldCheck, Loader, Save, Edit2, X, Trash2, Send, Building, ArrowUpRight, ArrowDownLeft, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { uploadToCloudinary } from '../utils/cloudinary';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +26,7 @@ const UserProfile = () => {
   const [actionAmount, setActionAmount] = useState('');
   const [upiId, setUpiId] = useState('');
   const [processingAction, setProcessingAction] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || '',
@@ -47,6 +48,8 @@ const UserProfile = () => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [salesHistory, setSalesHistory] = useState([]);
+
+  const [showBalance, setShowBalance] = useState(false);
 
   useEffect(() => {
     // Load Razorpay Script
@@ -216,7 +219,6 @@ const UserProfile = () => {
         }
       }
       else if (walletAction === 'send') {
-        // Since backend doesn't have UPI send explicit endpoint, we fallback to withdrawal if UPI ID is valid
         if (!upiId) {
           error('Please enter a valid UPI ID');
           return;
@@ -242,6 +244,8 @@ const UserProfile = () => {
       else setTimeout(() => setProcessingAction(false), 1000);
     }
   };
+
+  const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 3);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
@@ -374,9 +378,19 @@ const UserProfile = () => {
 
             {/* Wallet History */}
             <div className="glass-panel" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>Recent Transactions</h3>
-              {transactions.map(tx => (
-                <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+                <h3 style={{ fontSize: '1rem', margin: 0 }}>Recent Transactions</h3>
+                {transactions.length > 3 && (
+                    <button 
+                        onClick={() => setShowAllTransactions(!showAllTransactions)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
+                    >
+                        <Eye size={14} /> {showAllTransactions ? 'View Less' : 'View History'}
+                    </button>
+                )}
+              </div>
+              {displayedTransactions.length > 0 ? displayedTransactions.map(tx => (
+                <div key={tx.id || tx._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ background: tx.type === 'credit' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '8px' }}>
                       {tx.type === 'credit' ? <ArrowDownLeft size={16} color="var(--success)" /> : <ArrowUpRight size={16} color="var(--danger)" />}
@@ -390,7 +404,9 @@ const UserProfile = () => {
                     {tx.type === 'credit' ? '+' : '-'}₹{tx.amount}
                   </span>
                 </div>
-              ))}
+              )) : (
+                  <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1rem' }}>No transactions yet</p>
+              )}
             </div>
           </div>
 
@@ -524,8 +540,8 @@ const UserProfile = () => {
                   </thead>
                   <tbody>
                     {salesHistory.map(sale => (
-                      <tr key={sale.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '1rem 0', fontSize: '0.9rem' }}>#{sale.id}</td>
+                      <tr key={sale.id || sale._id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '1rem 0', fontSize: '0.9rem' }}>#{sale.id || sale._id?.slice(-6)}</td>
                         <td style={{ padding: '1rem 0', fontWeight: '500' }}>{sale.product}</td>
                         <td style={{ padding: '1rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{sale.date}</td>
                         <td style={{ padding: '1rem 0', textAlign: 'right', color: 'var(--success)', fontWeight: '600' }}>+₹{sale.amount}</td>

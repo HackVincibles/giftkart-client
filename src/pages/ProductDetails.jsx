@@ -14,8 +14,10 @@ const ProductDetails = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [customData, setCustomData] = useState({});
   const { success, error } = useToast();
+  
   const [activeScheduleId] = useState(localStorage.getItem('activeScheduleId'));
   const [activeScheduleRecipient] = useState(localStorage.getItem('activeScheduleRecipient'));
+  const [isInWishlist, setIsInWishlist] = useState(false);
 
   const handleAddToSchedule = async () => {
     try {
@@ -38,9 +40,7 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        // Handle mock IDs by redirecting to a real product if possible or showing error
         if (id === '1' || id === '2') {
-           // Redirect to search or show a helpful message
            setProduct(null);
         } else {
           const res = await axios.get(`/products/${id}`);
@@ -57,6 +57,37 @@ const ProductDetails = () => {
     };
     fetchProduct();
   }, [id]);
+
+  useEffect(() => {
+    const checkWishlist = async () => {
+      try {
+        const res = await axios.get('/wishlist');
+        if (res.data.success) {
+          const exists = res.data.data.products.some(p => p.product._id === id);
+          setIsInWishlist(exists);
+        }
+      } catch (err) {
+        console.error("Wishlist check error:", err);
+      }
+    };
+    if (product) checkWishlist();
+  }, [id, product]);
+
+  const handleToggleWishlist = async () => {
+    try {
+      if (isInWishlist) {
+        await axios.delete(`/wishlist/${product._id}`);
+        setIsInWishlist(false);
+        success("Removed from favorites");
+      } else {
+        await axios.post('/wishlist/add', { productId: product._id });
+        setIsInWishlist(true);
+        success("Added to favorites!");
+      }
+    } catch (err) {
+      error("Failed to update favorites");
+    }
+  };
 
   const handleAddToCart = async () => {
     if (!product) return error("Cannot add a non-existent product to cart.");
@@ -253,8 +284,12 @@ const ProductDetails = () => {
                 >
                   <ShoppingCart size={20} /> Add to Cart
                 </button>
-                <button className="btn btn-secondary" style={{ padding: '1rem' }}>
-                  <Heart size={20} />
+                <button 
+                  onClick={handleToggleWishlist}
+                  className="btn btn-secondary" 
+                  style={{ padding: '1rem', color: isInWishlist ? '#ef4444' : 'inherit' }}
+                >
+                  <Heart size={20} fill={isInWishlist ? '#ef4444' : 'transparent'} />
                 </button>
               </div>
             </div>

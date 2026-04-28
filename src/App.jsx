@@ -29,6 +29,7 @@ import AutoGifting from './pages/AutoGifting';
 import MyOrders from './pages/MyOrders';
 import OrderTracking from './pages/OrderTracking';
 import GiftingAI from './pages/GiftingAI';
+import Wishlist from './pages/Wishlist';
 
 // Dummy components for other routes to prevent errors
 const DummyPage = ({ title }) => (
@@ -125,7 +126,11 @@ const AppRoutes = () => {
           <OrderTracking />
         </ProtectedRoute>
       } />
-      <Route path="/wishlist" element={<DummyPage title="Wishlist" />} />
+      <Route path="/wishlist" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <Wishlist />
+        </ProtectedRoute>
+      } />
       <Route path="/wallet" element={<DummyPage title="Wallet" />} />
     </Routes>
   );
