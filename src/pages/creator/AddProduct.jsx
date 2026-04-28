@@ -1,23 +1,46 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Image as ImageIcon, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Image as ImageIcon, Save, Loader } from 'lucide-react';
 import axios from 'axios';
+import { uploadToCloudinary } from '../../utils/cloudinary';
+import { useToast } from '../../context/ToastContext';
 
 const AddProduct = () => {
   const navigate = useNavigate();
+  const { success, error } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     category: 'semi-custom',
     basePrice: '',
     inventoryStock: 100,
-    images: [{ url: '' }]
+    images: []
   });
 
   const [customFields, setCustomFields] = useState([
     { fieldName: '', fieldType: 'text', required: true, maxLength: '' }
   ]);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setFormData(prev => ({
+        ...prev,
+        images: [{ url }]
+      }));
+      success("Image uploaded successfully!");
+    } catch (err) {
+      error("Failed to upload image to Cloudinary.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleAddField = () => {
     setCustomFields([...customFields, { fieldName: '', fieldType: 'text', required: true, maxLength: '' }]);
@@ -38,27 +61,22 @@ const AddProduct = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Format payload to match backend Product model
     const payload = {
       name: formData.name,
       description: formData.description,
       category: formData.category,
       basePrice: Number(formData.basePrice),
-      images: formData.images.filter(img => img.url !== ''),
+      images: formData.images,
       inventory: { stockCount: Number(formData.inventoryStock) },
       customizableFields: customFields.filter(f => f.fieldName !== '')
     };
 
     try {
-      // Assuming backend route requires creator auth
-      // await axios.post('/seller-products', payload);
-      
-      // Simulating network delay
+      // In a real app, send to backend
       setTimeout(() => {
         setLoading(false);
         navigate('/creator-dashboard/products');
       }, 1000);
-      
     } catch (error) {
       console.error('Failed to create product', error);
       setLoading(false);
@@ -188,22 +206,25 @@ const AddProduct = () => {
           <div className="glass-panel" style={{ padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>Product Images</h3>
             
-            <div style={{ border: '2px dashed var(--border-light)', borderRadius: '8px', padding: '2rem', textAlign: 'center', background: 'rgba(15, 23, 42, 0.4)' }}>
-              <ImageIcon size={40} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Cloudinary integration active.</p>
-              
-              <div className="input-group" style={{ textAlign: 'left', marginBottom: 0 }}>
-                <label className="input-label">Image URL (Mock Upload)</label>
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  placeholder="https://..."
-                  value={formData.images[0].url}
-                  onChange={(e) => setFormData({...formData, images: [{ url: e.target.value }]})}
-                />
-              </div>
-            </div>
-            {formData.images[0].url && (
+            <label style={{ 
+              border: '2px dashed var(--border-light)', borderRadius: '8px', padding: '2rem', 
+              textAlign: 'center', background: 'rgba(15, 23, 42, 0.4)', display: 'block', cursor: 'pointer' 
+            }}>
+              {uploadingImage ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Loader className="animate-spin" size={40} color="var(--accent-primary)" style={{ marginBottom: '1rem' }} />
+                  <p style={{ color: 'var(--text-secondary)' }}>Uploading to Cloudinary...</p>
+                </div>
+              ) : (
+                <>
+                  <ImageIcon size={40} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Click to upload via Cloudinary</p>
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                </>
+              )}
+            </label>
+            
+            {formData.images.length > 0 && formData.images[0].url && (
               <div style={{ marginTop: '1rem', borderRadius: '8px', overflow: 'hidden', height: '150px' }}>
                 <img src={formData.images[0].url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>

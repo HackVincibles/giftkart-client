@@ -5,21 +5,21 @@ const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
+// Axios default configuration
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+axios.defaults.withCredentials = true;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Axios default configuration
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  axios.defaults.withCredentials = true;
 
   useEffect(() => {
     // Check if user is logged in on mount
     const checkAuth = async () => {
       try {
         const res = await axios.get('/auth/me');
-        if (res.data && res.data.user) {
-          setUser(res.data.user);
+        if (res.data && res.data._id) {
+          setUser(res.data);
         }
       } catch (err) {
         console.log('Not authenticated');
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('/auth/logout');
+      await axios.get('/auth/logout');
       setUser(null);
     } catch (err) {
       console.error('Logout failed', err);

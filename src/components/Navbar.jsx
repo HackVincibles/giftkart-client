@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User as UserIcon, Gift } from 'lucide-react';
+import { LogOut, User as UserIcon, Gift, ShoppingCart } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -32,22 +32,33 @@ const Navbar = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
         {user ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Link to="/cart" style={{ color: 'var(--text-primary)', position: 'relative', display: 'flex', alignItems: 'center', padding: '0.5rem' }} className="hover:opacity-80 transition-opacity">
+              <ShoppingCart size={24} />
+            </Link>
+            <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }} className="hover:opacity-80 transition-opacity">
               <div style={{
                 background: 'rgba(139, 92, 246, 0.2)',
-                padding: '0.5rem',
+                width: '40px',
+                height: '40px',
                 borderRadius: '50%',
-                display: 'flex'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden'
               }}>
-                <UserIcon size={20} color="var(--accent-primary)" />
+                {user.avatar ? (
+                  <img src={user.avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <UserIcon size={20} color="var(--accent-primary)" />
+                )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{user.displayName || user.name || 'User'}</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
-                  {user.email} • {user.role}
+                  {user.role}
                 </span>
               </div>
-            </div>
+            </Link>
             <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <LogOut size={16} /> Logout
             </button>

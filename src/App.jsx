@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
+import { ToastProvider } from './context/ToastContext';
+
 // Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -20,6 +22,9 @@ import AddProduct from './pages/creator/AddProduct';
 import AIChat from './pages/AIChat';
 import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
+import UserProfile from './pages/UserProfile';
+
+import AutoGifting from './pages/AutoGifting';
 
 // Dummy components for other routes to prevent errors
 const DummyPage = ({ title }) => (
@@ -86,9 +91,22 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
+      {/* Profile Route */}
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <UserProfile />
+        </ProtectedRoute>
+      } />
+
+      {/* Auto-Gifting Route */}
+      <Route path="/auto-gifting" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <AutoGifting />
+        </ProtectedRoute>
+      } />
+      
       {/* Other placeholders for NavLinks */}
       <Route path="/orders" element={<DummyPage title="My Orders" />} />
-      <Route path="/auto-gifting" element={<DummyPage title="Auto-Gifting" />} />
       <Route path="/wishlist" element={<DummyPage title="Wishlist" />} />
       <Route path="/wallet" element={<DummyPage title="Wallet" />} />
     </Routes>
@@ -102,9 +120,11 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
       <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <ToastProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </ToastProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );
