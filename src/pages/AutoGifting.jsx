@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Plus, Gift, Clock, MapPin, ChevronRight, Loader, Edit2, Truck, XCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Plus, Gift, Clock, MapPin, ChevronDown, ChevronUp, Loader, Edit2, Truck, XCircle, CheckCircle } from 'lucide-react';
+
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
 
@@ -11,6 +12,12 @@ const AutoGifting = () => {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const { success, error } = useToast();
+  const [showAddress, setShowAddress] = useState({});
+
+  const toggleAddress = (id) => {
+    setShowAddress(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
 
   const [formData, setFormData] = useState({
     recipientName: '',
@@ -24,7 +31,9 @@ const AutoGifting = () => {
     deliveryAddress: '',
     deliveryCity: '',
     deliveryState: '',
-    deliveryPincode: ''
+    deliveryPincode: '',
+    isAutonomous: false,
+    maxBudget: 2000
   });
 
   const fetchEvents = async () => {
@@ -91,6 +100,10 @@ const AutoGifting = () => {
           city: formData.deliveryCity,
           state: formData.deliveryState,
           pincode: formData.deliveryPincode
+        },
+        isAutonomous: formData.isAutonomous,
+        autoSelectionCriteria: {
+          maxBudget: formData.maxBudget || 2000
         }
       };
 
@@ -140,29 +153,36 @@ const AutoGifting = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)' }}>
       <Navbar />
       
-      <main className="container animate-fade-in" style={{ padding: '3rem 2rem', flex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <main className="container animate-fade-in" style={{ padding: '3rem 2rem', flex: 1, maxWidth: '1600px', margin: '0 auto' }}>
+
+
+
+
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1.5rem' }}>
+
           <div>
-            <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Calendar color="var(--accent-primary)" /> Auto-Gifting Calendar
+            <h1 className="dashboard-title" style={{ fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Calendar color="var(--accent-primary)" size={28} /> Auto-Gift Calendar
             </h1>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Schedule gifts for loved ones months in advance and never miss an important date.</p>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', fontSize: '0.9rem' }}>Schedule gifts and never miss a date.</p>
           </div>
           
-          <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {showAddForm ? 'Cancel' : <><Plus size={18} /> Schedule Gift</>}
+          <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-primary mobile-full-width" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+            {showAddForm ? 'Close Form' : <><Plus size={18} /> Schedule Gift</>}
           </button>
         </div>
 
+
         {showAddForm ? (
-          <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>Create New Schedule</h2>
+          <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem', borderRadius: '24px' }}>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem', fontWeight: '800' }}>Schedule Details</h2>
             
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
                 {/* Left Col: Event Details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Event Details</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Event Info</h3>
                   
                   <div className="input-group" style={{ marginBottom: 0 }}>
                     <label className="input-label">Recipient Name</label>
@@ -201,22 +221,29 @@ const AutoGifting = () => {
                     <input required type="date" className="input-field" value={formData.occasionDate} onChange={e => setFormData({...formData, occasionDate: e.target.value})} />
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px' }}>
-                    <input type="checkbox" id="recurring" checked={formData.isRecurring} onChange={e => setFormData({...formData, isRecurring: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)' }} />
-                    <label htmlFor="recurring" style={{ cursor: 'pointer' }}>Repeat this event?</label>
-                    
-                    {formData.isRecurring && (
-                      <select className="input-field" style={{ padding: '0.3rem', width: 'auto', marginLeft: 'auto' }} value={formData.recurringPattern} onChange={e => setFormData({...formData, recurringPattern: e.target.value})}>
-                        <option value="yearly">Yearly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--accent-primary)05', padding: '1rem', borderRadius: '12px', border: '1px solid var(--accent-primary)20' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <input type="checkbox" id="recurring" checked={formData.isRecurring} onChange={e => setFormData({...formData, isRecurring: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)' }} />
+                      <label htmlFor="recurring" style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600' }}>Repeat Yearly?</label>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '0.75rem' }}>
+                      <input type="checkbox" id="autonomous" checked={formData.isAutonomous} onChange={e => setFormData({...formData, isAutonomous: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: 'var(--success)' }} />
+                      <label htmlFor="autonomous" style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: '800', color: 'var(--success)' }}>
+                         Enable Autonomous Mode 🚀
+                      </label>
+                    </div>
+                    {formData.isAutonomous && (
+                      <div style={{ paddingLeft: '1.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        AI will automatically select and order the best gift within your budget.
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* Right Col: Delivery Address */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Delivery Address</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Shipping</h3>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="input-group" style={{ marginBottom: 0 }}>
@@ -234,21 +261,41 @@ const AutoGifting = () => {
                     <input required type="text" className="input-field" value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} placeholder="House/Flat No., Street" />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '1rem' }}>
                     <div className="input-group" style={{ marginBottom: 0 }}>
-                      <label className="input-label">City & State</label>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input required type="text" className="input-field" value={formData.deliveryCity} onChange={e => setFormData({...formData, deliveryCity: e.target.value})} placeholder="City" />
-                        <input required type="text" className="input-field" value={formData.deliveryState} onChange={e => setFormData({...formData, deliveryState: e.target.value})} placeholder="State" />
-                      </div>
+                      <label className="input-label">City</label>
+                      <input required type="text" className="input-field" value={formData.deliveryCity} onChange={e => setFormData({...formData, deliveryCity: e.target.value})} placeholder="City" />
+                    </div>
+                    <div className="input-group" style={{ marginBottom: 0 }}>
+                      <label className="input-label">State</label>
+                      <input required type="text" className="input-field" value={formData.deliveryState} onChange={e => setFormData({...formData, deliveryState: e.target.value})} placeholder="State" />
                     </div>
                     <div className="input-group" style={{ marginBottom: 0 }}>
                       <label className="input-label">Pincode</label>
                       <input required type="text" className="input-field" value={formData.deliveryPincode} onChange={e => setFormData({...formData, deliveryPincode: e.target.value})} placeholder="Zip Code" />
                     </div>
                   </div>
+
+                  {formData.isAutonomous && (
+                    <div className="input-group" style={{ marginTop: '0.5rem', background: 'rgba(34, 197, 94, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                      <label className="input-label" style={{ color: 'var(--success)', fontWeight: '800' }}>Max Budget (INR)</label>
+                      <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 'bold', color: 'var(--text-muted)' }}>₹</span>
+                        <input 
+                          type="number" 
+                          className="input-field" 
+                          style={{ paddingLeft: '2rem' }}
+                          value={formData.maxBudget} 
+                          onChange={e => setFormData({...formData, maxBudget: e.target.value})} 
+                          placeholder="e.g. 2000" 
+                        />
+                      </div>
+                      <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>AI will select the best gift up to this amount.</p>
+                    </div>
+                  )}
                 </div>
               </div>
+
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem' }}>
                 <button type="submit" disabled={loading} className="btn btn-primary" style={{ padding: '0.8rem 2rem' }}>
@@ -264,89 +311,132 @@ const AutoGifting = () => {
             <Loader className="animate-spin" color="var(--accent-primary)" size={40} />
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem' }}>
+
+
+
+
+
+
+
+
+
             {sortedEvents.length > 0 ? sortedEvents.map(evt => {
               const daysLeft = calculateDaysLeft(evt.occasionDate);
               
               return (
-              <div key={evt._id} className="glass-panel hover:scale-[1.02]" style={{ padding: '1.5rem', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+              <div key={evt._id} className="glass-panel hover:scale-[1.01] animate-slide-up" style={{ padding: '1.25rem', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 
                 {daysLeft <= 14 && (
-                  <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--accent-primary)', color: 'white', padding: '0.25rem 1rem', borderBottomLeftRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--accent-primary)', color: 'white', padding: '0.15rem 0.75rem', borderBottomLeftRadius: '8px', fontSize: '0.65rem', fontWeight: 'bold', zIndex: 2 }}>
                     ACTION REQUIRED
                   </div>
                 )}
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.2rem', textTransform: 'capitalize' }}>{evt.occasion} for {evt.recipient?.name}</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Clock size={14} /> {new Date(evt.occasionDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} 
-                      {evt.isRecurring && <span style={{ background: 'rgba(255,255,255,0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', marginLeft: '0.5rem' }}>{evt.recurringPattern}</span>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1, paddingRight: '1rem' }}>
+                    <h3 style={{ fontSize: '1.2rem', marginBottom: '0.2rem', textTransform: 'capitalize', fontWeight: '800', lineHeight: '1.2' }}>{evt.occasion} for {evt.recipient?.name}</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Clock size={14} color="var(--accent-primary)" /> {new Date(evt.occasionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} 
+                      {evt.isRecurring && <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold', fontSize: '0.7rem' }}> • {evt.recurringPattern}</span>}
                     </p>
                   </div>
                   
-                  <div style={{ textAlign: 'center', background: daysLeft <= 14 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)', padding: '0.5rem', borderRadius: '8px', minWidth: '60px' }}>
-                    <h4 style={{ fontSize: '1.25rem', color: daysLeft <= 14 ? 'var(--danger)' : 'var(--accent-secondary)', lineHeight: 1 }}>{daysLeft}</h4>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>days left</span>
+                  <div style={{ textAlign: 'center', background: daysLeft <= 14 ? 'var(--danger)10' : 'var(--accent-secondary)10', padding: '0.4rem 0.6rem', borderRadius: '12px', minWidth: '55px', border: daysLeft <= 14 ? '1px solid var(--danger)20' : '1px solid var(--accent-secondary)20' }}>
+                    <h4 style={{ fontSize: '1.1rem', color: daysLeft <= 14 ? 'var(--danger)' : 'var(--accent-secondary)', lineHeight: 1, fontWeight: '900' }}>{daysLeft}</h4>
+                    <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>days</p>
                   </div>
                 </div>
 
-                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', position: 'relative' }}>
+
+
+                {/* Address Section - Compact */}
+                <div style={{ width: '100%' }}>
                   <button 
-                    onClick={() => {
-                        setFormData({
-                            _id: evt._id,
-                            recipientName: evt.recipient?.name,
-                            relationship: evt.recipient?.relationship,
-                            occasion: evt.occasion,
-                            occasionDate: evt.occasionDate.split('T')[0],
-                            isRecurring: evt.isRecurring,
-                            recurringPattern: evt.recurringPattern,
-                            deliveryName: evt.deliveryAddress?.name,
-                            deliveryPhone: evt.deliveryAddress?.phone,
-                            deliveryAddress: evt.deliveryAddress?.address,
-                            deliveryCity: evt.deliveryAddress?.city,
-                            deliveryState: evt.deliveryAddress?.state,
-                            deliveryPincode: evt.deliveryAddress?.pincode
-                        });
-                        setShowAddForm(true);
+                    onClick={() => toggleAddress(evt._id)}
+                    style={{ 
+                      width: '100%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      padding: '0.6rem 0.8rem', 
+                      background: 'rgba(255,255,255,0.03)', 
+                      border: '1px solid var(--border-light)', 
+                      borderRadius: '12px',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
                     }}
-                    style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}
-                    title="Edit Details"
                   >
-                    <Edit2 size={16} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <MapPin size={14} color="var(--accent-primary)" />
+                      <span style={{ fontWeight: '600' }}>Delivery Details</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                       <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setFormData({
+                                _id: evt._id,
+                                recipientName: evt.recipient?.name,
+                                relationship: evt.recipient?.relationship,
+                                occasion: evt.occasion,
+                                occasionDate: evt.occasionDate.split('T')[0],
+                                isRecurring: evt.isRecurring,
+                                recurringPattern: evt.recurringPattern,
+                                deliveryName: evt.deliveryAddress?.name,
+                                deliveryPhone: evt.deliveryAddress?.phone,
+                                deliveryAddress: evt.deliveryAddress?.address,
+                                deliveryCity: evt.deliveryAddress?.city,
+                                deliveryState: evt.deliveryAddress?.state,
+                                deliveryPincode: evt.deliveryAddress?.pincode
+                            });
+                            setShowAddForm(true);
+                        }}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '0.2rem' }}
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      {showAddress[evt._id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
                   </button>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: '0.5rem', paddingRight: '2rem' }}>
-                    <MapPin size={16} color="var(--accent-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <span>
-                      Deliver to: {evt.deliveryAddress?.name} <br/>
-                      {evt.deliveryAddress?.address}, {evt.deliveryAddress?.city} - {evt.deliveryAddress?.pincode}
-                    </span>
-                  </p>
+
+                  {showAddress[evt._id] && (
+                    <div className="animate-slide-down" style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                      <p style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--accent-primary)' }}>{evt.deliveryAddress?.name}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                        {evt.deliveryAddress?.address}, {evt.deliveryAddress?.city}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Selected Gifts Section */}
+
+
+
+                {/* Selected Gifts Section - Minimal Look */}
                 {evt.selectedGifts && evt.selectedGifts.length > 0 && (
-                  <div style={{ background: 'rgba(139, 92, 246, 0.05)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--accent-secondary)', fontWeight: 'bold', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Gift size={14} /> Selected Gift
+                  <div style={{ background: 'var(--accent-primary)05', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--accent-primary)10' }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--accent-secondary)', fontWeight: 'bold', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <Gift size={12} /> Selected Gift
                     </p>
                     {evt.selectedGifts.map((item, idx) => (
                         <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                             <img 
-                                src={item.product?.images?.[0]?.url || 'https://via.placeholder.com/50'} 
+                                src={item.product?.images?.[0]?.url || 'https://via.placeholder.com/80'} 
                                 alt={item.product?.name} 
-                                style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-light)' }} 
+                                style={{ width: '60px', height: '60px', borderRadius: '10px', objectFit: 'cover' }} 
                             />
-                            <div>
-                                <p style={{ fontSize: '0.95rem', fontWeight: '600' }}>{item.product?.name}</p>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)' }}>₹{item.product?.basePrice}</p>
+                            <div style={{ flex: 1 }}>
+                                <p style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product?.name}</p>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--accent-secondary)', fontWeight: '800' }}>₹{item.product?.basePrice}</p>
                             </div>
                         </div>
                     ))}
                   </div>
                 )}
+
+
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {evt.orderStatus === 'delivered' ? (
@@ -358,13 +448,13 @@ const AutoGifting = () => {
                         <div style={{ background: 'var(--accent-primary)10', color: 'var(--accent-primary)', padding: '0.8rem', borderRadius: '8px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '500', border: '1px solid var(--accent-primary)20' }}>
                             Order is being processed
                         </div>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button 
                                 onClick={() => navigate(`/tracking/${evt.orderId}`)}
                                 className="btn btn-primary" 
-                                style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                                style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem' }}
                             >
-                                <Truck size={16} /> Track
+                                <Truck size={14} /> Track
                             </button>
                             <button 
                                 onClick={async () => {
@@ -378,14 +468,15 @@ const AutoGifting = () => {
                                     }
                                 }} 
                                 className="btn btn-secondary" 
-                                style={{ flex: 1, color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                                style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem' }}
                             >
-                                <XCircle size={16} /> Cancel Order
+                                <XCircle size={14} /> Cancel
                             </button>
                         </div>
+
                     </div>
                   ) : (
-                    <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {evt.selectedGifts && evt.selectedGifts.length > 0 ? (
                         <button 
                           onClick={async () => {
@@ -407,43 +498,47 @@ const AutoGifting = () => {
                               }
                           }}
                           className="btn btn-primary" 
-                          style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', background: 'var(--success)', border: 'none' }}
+                          style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', background: 'var(--success)', border: 'none' }}
                         >
-                          <Gift size={16} /> Order This Gift Now
+                          <Gift size={14} /> Order Now
                         </button>
                       ) : (
                         <button 
                             onClick={() => {
                                 localStorage.setItem('activeScheduleId', evt._id);
                                 localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
-                                success(`Choosing gift for ${evt.recipient?.name}`);
                                 navigate('/buyer-dashboard');
                             }}
                             className="btn btn-primary" 
-                            style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                            style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem' }}
                         >
-                            <Plus size={16} /> Choose Gift from Marketplace
+                            <Plus size={14} /> Choose Gift
                         </button>
                       )}
-                      
-                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button 
-                            onClick={() => {
-                                localStorage.setItem('activeScheduleId', evt._id);
-                                localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
-                                navigate('/buyer-dashboard');
-                            }}
-                            className="btn btn-secondary" 
-                            style={{ flex: 1, fontSize: '0.85rem' }}
+                          onClick={() => {
+                            localStorage.setItem('activeScheduleId', evt._id);
+                            localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
+                            navigate('/buyer-dashboard');
+                          }}
+                          className="btn btn-secondary" 
+                          style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem' }}
                         >
-                            {evt.selectedGifts?.length > 0 ? 'Change Gift' : 'Browse'}
+                          Change
                         </button>
-                        <button onClick={() => handleCancel(evt._id)} className="btn btn-secondary" style={{ flex: 1, color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)', fontSize: '0.85rem' }}>
-                            Cancel Plan
+                        <button 
+                          onClick={() => handleCancel(evt._id)}
+                          className="btn btn-secondary" 
+                          style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'var(--danger)20' }}
+                        >
+                          Cancel Plan
                         </button>
                       </div>
-                    </>
+                    </div>
                   )}
+
                 </div>
 
               </div>

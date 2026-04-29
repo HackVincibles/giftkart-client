@@ -14,6 +14,9 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [walletBalance, setWalletBalance] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
+  const [promoCode, setPromoCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [verifyingCode, setVerifyingCode] = useState(false);
   const [address, setAddress] = useState({
     street: '123 Main St',
     city: 'Mumbai',
@@ -22,7 +25,7 @@ const Cart = () => {
   });
 
   const shipping = cartItems.length > 0 ? 50 : 0;
-  const total = subtotal > 0 ? subtotal + shipping : 0;
+  const total = subtotal > 0 ? subtotal + shipping - discount : 0;
   const amountToPay = useWallet ? Math.max(0, total - walletBalance) : total;
 
   useEffect(() => {
@@ -106,6 +109,24 @@ const Cart = () => {
     } catch (err) {
       error("Failed to remove item");
       fetchData();
+    }
+  };
+
+  const applyPromoCode = async () => {
+    if (!promoCode.trim()) return;
+    setVerifyingCode(true);
+    try {
+      const res = await axios.post('/referral/verify', { code: promoCode.trim() });
+      if (res.data.success) {
+        const disc = Math.round(subtotal * (res.data.discountPercent / 100));
+        setDiscount(disc);
+        success(res.data.message);
+      }
+    } catch (err) {
+      error(err.response?.data?.message || "Invalid or expired code");
+      setDiscount(0);
+    } finally {
+      setVerifyingCode(false);
     }
   };
 
@@ -204,57 +225,57 @@ const Cart = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
       
-      <main className="container animate-fade-in" style={{ padding: '3rem 2rem', flex: 1 }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <ShoppingBag /> Your Shopping Cart
+      <main className="container animate-fade-in" style={{ padding: '2rem 1rem', flex: 1 }}>
+        <h1 className="dashboard-title" style={{ fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <ShoppingBag size={28} /> Shopping Cart
         </h1>
 
         {cartItems.length === 0 ? (
-          <div className="glass-panel" style={{ padding: '4rem', textAlign: 'center' }}>
-            <ShoppingBag size={64} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Your cart is empty</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Looks like you haven't added anything to your cart yet.</p>
+          <div className="glass-panel" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+            <ShoppingBag size={48} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Your cart is empty</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.9rem' }}>Looks like you haven't added anything to your cart yet.</p>
             <button onClick={() => navigate('/buyer-dashboard')} className="btn btn-primary">Start Shopping</button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '2.5rem', alignItems: 'start' }}>
+          <div className="cart-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'start' }}>
             {/* Left: Cart Items */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
-                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Cart Items ({cartItems.length})</h3>
-                  <button onClick={() => axios.delete('/cart/clear').then(fetchData)} style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.9rem', cursor: 'pointer' }}>Clear Cart</button>
+              <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', borderRadius: '24px' }}>
+                <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '800' }}>Items ({cartItems.length})</h3>
+                  <button onClick={() => axios.delete('/cart/clear').then(fetchData)} style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '700' }}>Clear All</button>
                 </div>
                 
                 {cartItems.map((item) => (
-                  <div key={item._id} style={{ display: 'flex', gap: '1.5rem', padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div key={item._id} style={{ display: 'flex', gap: '1rem', padding: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' }}>
                     <img 
                       src={item.product?.images?.[0]?.url || 'https://via.placeholder.com/100'} 
                       alt={item.product?.name} 
-                      style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '12px', background: 'var(--bg-tertiary)' }} 
+                      style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px', background: 'var(--bg-tertiary)' }} 
                     />
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: '150px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
                         <div>
-                          <h4 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>{item.product?.name}</h4>
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Unit Price: ₹{item.price}</span>
+                          <h4 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.2rem' }}>{item.product?.name}</h4>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>₹{item.price} each</span>
                         </div>
-                        <span style={{ fontWeight: '700', fontSize: '1.1rem' }}>₹{item.price * item.quantity}</span>
+                        <span style={{ fontWeight: '800', fontSize: '1.1rem' }}>₹{item.price * item.quantity}</span>
                       </div>
                       
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                          <button onClick={() => updateQuantity(item._id, item.quantity - 1)} style={{ padding: '0.4rem 0.8rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                            <Minus size={14} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                          <button onClick={() => updateQuantity(item._id, item.quantity - 1)} style={{ padding: '0.3rem 0.6rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                            <Minus size={12} />
                           </button>
-                          <span style={{ padding: '0 0.5rem', fontWeight: '600', minWidth: '30px', textAlign: 'center' }}>{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item._id, item.quantity + 1)} style={{ padding: '0.4rem 0.8rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                            <Plus size={14} />
+                          <span style={{ padding: '0 0.4rem', fontWeight: '700', minWidth: '24px', textAlign: 'center', fontSize: '0.9rem' }}>{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item._id, item.quantity + 1)} style={{ padding: '0.3rem 0.6rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                            <Plus size={12} />
                           </button>
                         </div>
 
-                        <button onClick={() => removeItem(item._id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem' }}>
-                          <Trash2 size={16} /> Remove
+                        <button onClick={() => removeItem(item._id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8rem', fontWeight: '600' }}>
+                          <Trash2 size={14} /> Remove
                         </button>
                       </div>
                     </div>
@@ -263,12 +284,12 @@ const Cart = () => {
               </div>
 
               {/* Shipping Address */}
-              <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <MapPin size={20} color="var(--accent-primary)" /> Shipping Address
+              <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '800', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={18} color="var(--accent-primary)" /> Delivery Address
                 </h3>
-                <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="input-group" style={{ marginBottom: 0 }}>
                     <label className="input-label">Street Address</label>
                     <input 
                       type="text" 
@@ -277,41 +298,71 @@ const Cart = () => {
                       onChange={(e) => setAddress({...address, street: e.target.value})}
                     />
                   </div>
-                  <div className="input-group">
-                    <label className="input-label">City</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      value={address.city} 
-                      onChange={(e) => setAddress({...address, city: e.target.value})}
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Pincode</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      value={address.pincode} 
-                      onChange={(e) => setAddress({...address, pincode: e.target.value})}
-                    />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="input-group" style={{ marginBottom: 0 }}>
+                      <label className="input-label">City</label>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        value={address.city} 
+                        onChange={(e) => setAddress({...address, city: e.target.value})}
+                      />
+                    </div>
+                    <div className="input-group" style={{ marginBottom: 0 }}>
+                      <label className="input-label">Pincode</label>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        value={address.pincode} 
+                        onChange={(e) => setAddress({...address, pincode: e.target.value})}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Right: Summary & Payment */}
-            <div style={{ position: 'sticky', top: '2rem' }}>
-              <div className="glass-panel" style={{ padding: '2rem' }}>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: '600' }}>Price Details</h3>
+            <div className="cart-summary" style={{ position: 'sticky', top: '2rem' }}>
+              <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '1.25rem', fontWeight: '800' }}>Order Summary</h3>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                     <span>Price ({cartItems.length} items)</span>
                     <span>₹{subtotal}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                    <span>Delivery Charges</span>
-                    <span style={{ color: 'var(--success)' }}>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <span>Delivery</span>
+                    <span style={{ color: 'var(--success)', fontWeight: '700' }}>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span>
+                  </div>
+                  {discount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)', fontSize: '0.9rem', fontWeight: '700' }}>
+                      <span>Discount (Promo)</span>
+                      <span>-₹{discount}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Promo Code Section */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input 
+                      type="text" 
+                      className="input-field" 
+                      placeholder="Referral / Promo Code" 
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      style={{ flex: 1, marginBottom: 0, textTransform: 'uppercase', letterSpacing: '1px' }}
+                    />
+                    <button 
+                      onClick={applyPromoCode}
+                      disabled={verifyingCode || !promoCode}
+                      className="btn btn-secondary"
+                      style={{ padding: '0 1rem', fontSize: '0.8rem' }}
+                    >
+                      {verifyingCode ? <Loader className="animate-spin" size={14} /> : 'Apply'}
+                    </button>
                   </div>
                 </div>
 
@@ -319,14 +370,14 @@ const Cart = () => {
                 <div style={{ 
                   background: 'rgba(139, 92, 246, 0.05)', 
                   border: '1px solid rgba(139, 92, 246, 0.2)', 
-                  padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem'
+                  padding: '1rem', borderRadius: '16px', marginBottom: '1.25rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <Wallet color="var(--accent-primary)" size={20} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <Wallet color="var(--accent-primary)" size={18} />
                       <div>
-                        <p style={{ fontWeight: '600', fontSize: '0.9rem' }}>Use Wallet Balance</p>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Available: ₹{walletBalance}</p>
+                        <p style={{ fontWeight: '700', fontSize: '0.85rem', margin: 0 }}>Use Balance</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>₹{walletBalance}</p>
                       </div>
                     </div>
                     <input 
@@ -334,47 +385,50 @@ const Cart = () => {
                       checked={useWallet} 
                       onChange={(e) => setUseWallet(e.target.checked)}
                       disabled={walletBalance === 0}
-                      style={{ width: '20px', height: '20px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                      style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
                     />
                   </div>
                   {useWallet && walletBalance > 0 && (
-                    <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px dashed rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', color: 'var(--success)', fontSize: '0.9rem' }}>
-                      <span>Wallet Deduction</span>
+                    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px dashed rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', color: 'var(--success)', fontSize: '0.85rem', fontWeight: '700' }}>
+                      <span>Deducted</span>
                       <span>-₹{Math.min(walletBalance, total)}</span>
                     </div>
                   )}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                  <span style={{ fontSize: '1.25rem', fontWeight: '600' }}>Total Amount</span>
-                  <span style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)' }}>₹{amountToPay}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <span style={{ fontSize: '1rem', fontWeight: '700' }}>Total</span>
+                  <span style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-primary)' }}>₹{amountToPay}</span>
                 </div>
 
                 <button 
                   onClick={handleCheckout} 
                   disabled={processing}
                   className="btn btn-primary" 
-                  style={{ width: '100%', padding: '1.25rem', fontSize: '1.1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem' }}
+                  style={{ width: '100%', padding: '1rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.6rem', fontWeight: '800' }}
                 >
-                  {processing ? <Loader className="animate-spin" size={24} /> : (
-                    <><CreditCard size={22} /> {amountToPay === 0 ? 'Place Order' : 'Checkout Now'}</>
+                  {processing ? <Loader className="animate-spin" size={20} /> : (
+                    <><CreditCard size={20} /> {amountToPay === 0 ? 'Place Order' : 'Pay Now'}</>
                   )}
                 </button>
                 
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  <ShieldCheck size={18} color="var(--success)" /> 100% Safe and Secure Payments
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', marginTop: '1.25rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                  <ShieldCheck size={16} color="var(--success)" /> Secure checkout
                 </div>
               </div>
               
-              <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                By placing the order, you agree to GiftKart's Terms and Conditions.
+              <p style={{ textAlign: 'center', marginTop: '1.25rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                Secure payment powered by Razorpay.
               </p>
             </div>
           </div>
         )}
       </main>
+
+
     </div>
   );
 };
 
 export default Cart;
+

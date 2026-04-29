@@ -13,10 +13,13 @@ export const NotificationProvider = ({ children }) => {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await axios.get('/notifications/user');
+      const isSeller = user.role === 'seller' || user.role === 'creator';
+      const endpointPrefix = isSeller ? '/notifications/seller' : '/notifications/user';
+      
+      const res = await axios.get(endpointPrefix);
       if (res.data.success) {
-        setNotifications(res.data.data.notifications);
-        setUnreadCount(res.data.data.unreadCount);
+        setNotifications(res.data.data.notifications || res.data.data);
+        setUnreadCount(res.data.data.unreadCount !== undefined ? res.data.data.unreadCount : (res.data.data.notifications || res.data.data).filter(n => !n.read).length);
       }
     } catch (err) {
       console.error("Error fetching notifications:", err);
@@ -32,7 +35,10 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = async (id) => {
     try {
-      await axios.put(`/notifications/user/mark-read/${id}`);
+      const isSeller = user.role === 'seller' || user.role === 'creator';
+      const endpointPrefix = isSeller ? '/notifications/seller' : '/notifications/user';
+      
+      await axios.put(`${endpointPrefix}/mark-read/${id}`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
@@ -42,7 +48,10 @@ export const NotificationProvider = ({ children }) => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put('/notifications/user/mark-all-read');
+      const isSeller = user.role === 'seller' || user.role === 'creator';
+      const endpointPrefix = isSeller ? '/notifications/seller' : '/notifications/user';
+      
+      await axios.put(`${endpointPrefix}/mark-all-read`);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -52,7 +61,10 @@ export const NotificationProvider = ({ children }) => {
 
   const deleteNotification = async (id) => {
     try {
-      await axios.delete(`/notifications/user/${id}`);
+      const isSeller = user.role === 'seller' || user.role === 'creator';
+      const endpointPrefix = isSeller ? '/notifications/seller' : '/notifications/user';
+      
+      await axios.delete(`${endpointPrefix}/${id}`);
       setNotifications(prev => prev.filter(n => n._id !== id));
       // If it was unread, decrement count
       const deletedNotification = notifications.find(n => n._id === id);

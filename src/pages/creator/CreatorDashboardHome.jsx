@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Package, DollarSign, Sparkles } from 'lucide-react';
 import axios from 'axios';
 
 const CreatorDashboardHome = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
@@ -31,6 +32,18 @@ const CreatorDashboardHome = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProcessOrder = async (orderQueueId) => {
+    try {
+      // Automatically move to in-progress when processing starts
+      await axios.put(`/creator-dashboard/orders/${orderQueueId}`, { status: 'in-progress' });
+      navigate('/creator-dashboard/orders');
+    } catch (err) {
+      console.error("Failed to process order", err);
+      // Fallback navigate anyway
+      navigate('/creator-dashboard/orders');
     }
   };
 
@@ -122,9 +135,13 @@ const CreatorDashboardHome = () => {
                           {item.userInputs?.description || 'Standard Order'}
                         </td>
                         <td style={{ padding: '1rem' }}>
-                          <Link to="/creator-dashboard/orders" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                          <button 
+                            onClick={() => handleProcessOrder(item._id)} 
+                            className="btn btn-secondary" 
+                            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                          >
                             Process
-                          </Link>
+                          </button>
                         </td>
                       </tr>
                     ))

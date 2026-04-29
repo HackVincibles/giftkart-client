@@ -45,20 +45,37 @@ const StatusDropdown = ({ orderId, currentStatus, onUpdate }) => {
     setOpen(o => !o);
   };
 
-  const handleSelect = async (newStatus) => {
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [location, setLocation] = useState('Central Hub');
+  const [note, setNote] = useState('');
+
+  const handleSelect = (newStatus) => {
     if (newStatus === currentStatus) { setOpen(false); return; }
     setOpen(false);
+    setPendingStatus(newStatus);
+    setNote(`Order status updated to ${getStatusInfo(newStatus).label}`);
+    setShowDetailsModal(true);
+  };
+
+  const confirmUpdate = async () => {
     try {
       setLoading(true);
-      const res = await axios.put(`/admin/orders/${orderId}/status`, { status: newStatus });
+      setShowDetailsModal(false);
+      const res = await axios.put(`/admin/orders/${orderId}/status`, { 
+        status: pendingStatus,
+        location,
+        note
+      });
       if (res.data.success) {
-        success(`Status → ${getStatusInfo(newStatus).label}`);
-        onUpdate(orderId, newStatus);
+        success(`Status → ${getStatusInfo(pendingStatus).label}`);
+        onUpdate(orderId, pendingStatus);
       }
     } catch (err) {
       error('Failed to update status');
     } finally {
       setLoading(false);
+      setPendingStatus(null);
     }
   };
 
@@ -127,6 +144,60 @@ const StatusDropdown = ({ orderId, currentStatus, onUpdate }) => {
         <ChevronDown size={13} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: '0.2s ease' }} />
       </button>
       {menu}
+      
+      {showDetailsModal && ReactDOM.createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.8)', zIndex: 100000, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)'
+        }}>
+          <div className="glass-panel" style={{ padding: '2rem', maxWidth: '450px', width: '90%' }}>
+            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Truck size={20} color="var(--accent-primary)" /> Update Tracking Details
+            </h3>
+            
+            <div className="input-group">
+              <label className="input-label">Current Location</label>
+              <input 
+                type="text" 
+                className="input-field" 
+                value={location} 
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Mumbai Hub, In Transit"
+              />
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Detailed Note (Visible to User)</label>
+              <textarea 
+                className="input-field" 
+                style={{ minHeight: '80px', resize: 'vertical' }}
+                value={note} 
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. Package has reached the local sorting facility."
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+              <button 
+                onClick={() => setShowDetailsModal(false)} 
+                className="btn btn-secondary" 
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmUpdate} 
+                className="btn btn-primary" 
+                style={{ flex: 2 }}
+              >
+                Update Status
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

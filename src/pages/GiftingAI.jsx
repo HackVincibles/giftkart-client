@@ -158,7 +158,8 @@ const GiftingAI = () => {
       <div style={{ position: 'fixed', top: '10%', right: '10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
       <div style={{ position: 'fixed', bottom: '10%', left: '10%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(37, 99, 235, 0.03) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
 
-      <main style={{ flex: 1, display: 'flex', height: 'calc(100vh - 70px)', position: 'relative', zIndex: 1 }}>
+      <main className="gifting-ai-main" style={{ flex: 1, display: 'flex', height: 'calc(100vh - 70px)', position: 'relative', zIndex: 1, flexDirection: 'row' }}>
+
         
         {/* Left Section: Recommendations (Flexible Width) */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', background: 'rgba(0,0,0,0.1)' }} className="custom-scrollbar">
@@ -183,7 +184,8 @@ const GiftingAI = () => {
               </div>
 
               {/* Results Grid - Compact Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
+              <div className="grid">
+
                 {filteredRecommendations.map((rec, idx) => (
                   <div key={idx} className="glass-panel" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'all 0.2s ease', border: '1px solid var(--border-light)' }}>
                     <div style={{ position: 'relative', height: '160px' }}>
@@ -257,7 +259,7 @@ const GiftingAI = () => {
         </div>
 
         {/* Right Sidebar: Chat (Narrower - 30%) */}
-        <div style={{ 
+        <div className="ai-sidebar" style={{ 
           width: '30%', 
           minWidth: '320px',
           borderLeft: '1px solid var(--border-light)', 
@@ -362,11 +364,28 @@ const GiftingAI = () => {
         </div>
       </main>
 
+
       <style>{`
+        @media (max-width: 1024px) {
+          .gifting-ai-main {
+            flex-direction: column !important;
+            height: auto !important;
+            overflow-y: auto !important;
+          }
+          .ai-sidebar {
+            width: 100% !important;
+            min-width: 100% !important;
+            height: 600px !important;
+            border-left: none !important;
+            border-top: 1px solid var(--border-light) !important;
+          }
+        }
+        
         @keyframes typingDot {
           0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
           40% { transform: scale(1.1); opacity: 1; }
         }
+
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }

@@ -19,8 +19,8 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleSuccess = (role) => {
-    if (role === 'admin') navigate('/admin');
-    else if (role === 'creator') navigate('/creator-dashboard');
+    if (role === 'admin') navigate('/admin-dashboard');
+    else if (role === 'creator' || role === 'seller') navigate('/creator-dashboard');
     else navigate('/buyer-dashboard');
   };
 

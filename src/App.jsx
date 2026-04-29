@@ -5,6 +5,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import { ToastProvider } from './context/ToastContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SocketProvider } from './context/SocketContext';
 
 // Pages
 import Home from './pages/Home';
@@ -44,7 +45,7 @@ import CreatorWallet from './pages/creator/CreatorWallet';
 import EditProduct from './pages/creator/EditProduct';
 import CreatorAI from './pages/creator/CreatorAI';
 import CreatorDashboardHome from './pages/creator/CreatorDashboardHome';
-
+import CreatorRevenue from './pages/creator/CreatorRevenue';
 
 import AIChat from './pages/AIChat';
 import GiftingAI from './pages/GiftingAI';
@@ -59,6 +60,7 @@ import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
 import SocialWishlist from './pages/SocialWishlist';
 import PublicWishlist from './pages/PublicWishlist';
+import ForgotPassword from './pages/ForgotPassword';
 
 // Dummy components for other routes to prevent errors
 const DummyPage = ({ title }) => (
@@ -84,6 +86,7 @@ const AppRoutes = () => {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/seller-login" element={<SellerLogin />} />
       <Route path="/seller-register" element={<SellerRegister />} />
       
@@ -120,6 +123,7 @@ const AppRoutes = () => {
         <Route path="products/edit/:productId" element={<EditProduct />} />
         <Route path="orders" element={<CreatorOrders />} />
         <Route path="wallet" element={<CreatorWallet />} />
+        <Route path="revenue" element={<CreatorRevenue />} />
         <Route path="ai" element={<CreatorAI />} />
       </Route>
 
@@ -213,13 +217,15 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
       <AuthProvider>
-        <NotificationProvider>
-          <ToastProvider>
-            <Router>
-              <AppRoutes />
-            </Router>
-          </ToastProvider>
-        </NotificationProvider>
+        <SocketProvider>
+          <NotificationProvider>
+            <ToastProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </ToastProvider>
+          </NotificationProvider>
+        </SocketProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );

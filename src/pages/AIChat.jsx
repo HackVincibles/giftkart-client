@@ -93,72 +93,73 @@ const AIChat = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <Navbar />
       
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 0' }}>
-          <button onClick={() => navigate(-1)} className="btn btn-secondary" style={{ padding: '0.5rem' }}>
-            <ArrowLeft size={20} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0.5rem' }}>
+          <button onClick={() => navigate(-1)} className="btn btn-secondary" style={{ padding: '0.4rem' }}>
+            <ArrowLeft size={18} />
           </button>
           <div>
-            <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Bot color="var(--accent-primary)" /> AI Gift Mind Reader
+            <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontWeight: '800' }}>
+              <Bot color="var(--accent-primary)" size={22} /> AI Gift Mind Reader
             </h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Powered by Gemini NLP</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Powered by Gemini NLP</p>
           </div>
         </div>
 
-        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0, borderRadius: '24px', border: '1px solid var(--border-light)' }}>
           {/* Chat History */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {messages.map((msg, index) => (
               <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                 <div style={{ 
                   display: 'flex', 
-                  gap: '1rem', 
-                  maxWidth: '80%', 
+                  gap: '0.75rem', 
+                  maxWidth: '92%', 
                   flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' 
                 }}>
                   {/* Avatar */}
                   <div style={{ 
-                    width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
+                    width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
                     background: msg.role === 'user' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                    {msg.role === 'user' ? <User size={20} color="var(--accent-primary)" /> : <Bot size={20} color="var(--success)" />}
+                    {msg.role === 'user' ? <User size={16} color="var(--accent-primary)" /> : <Bot size={16} color="var(--success)" />}
                   </div>
 
                   {/* Message Content */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                     <div style={{ 
-                      padding: '1rem 1.5rem', 
+                      padding: '0.75rem 1.1rem', 
                       borderRadius: '16px', 
                       borderTopRightRadius: msg.role === 'user' ? '4px' : '16px',
                       borderTopLeftRadius: msg.role === 'assistant' ? '4px' : '16px',
                       background: msg.role === 'user' ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' : 'rgba(30, 41, 59, 0.8)',
                       color: 'white',
                       border: msg.role === 'assistant' ? '1px solid var(--border-light)' : 'none',
-                      lineHeight: '1.5'
+                      lineHeight: '1.5',
+                      fontSize: '0.95rem'
                     }}>
                       {msg.content}
                     </div>
 
                     {/* Product References UI */}
                     {msg.productReferences && msg.productReferences.length > 0 && (
-                      <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem', width: '100%', maxWidth: '600px' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem', width: '100%', maxWidth: 'calc(100vw - 100px)', scrollSnapType: 'x mandatory' }}>
                         {msg.productReferences.map((prod, i) => (
                           <div key={i} style={{ 
                             background: 'var(--bg-primary)', border: '1px solid var(--border-light)', 
-                            borderRadius: '12px', overflow: 'hidden', minWidth: '200px', cursor: 'pointer',
-                            transition: 'transform 0.2s'
+                            borderRadius: '12px', overflow: 'hidden', minWidth: '180px', cursor: 'pointer',
+                            transition: 'transform 0.2s', scrollSnapAlign: 'start'
                           }} className="hover:transform hover:-translate-y-1">
-                            <img src={prod.image || prod.images?.[0]?.url || 'https://via.placeholder.com/200'} alt={prod.name} style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
-                            <div style={{ padding: '1rem' }}>
-                              <p style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.name}</p>
+                            <img src={prod.image || prod.images?.[0]?.url || 'https://via.placeholder.com/200'} alt={prod.name} style={{ width: '100%', height: '100px', objectFit: 'cover' }} />
+                            <div style={{ padding: '0.75rem' }}>
+                              <p style={{ fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.4rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.name}</p>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>₹{prod.basePrice}</span>
+                                <span style={{ color: 'var(--success)', fontWeight: '800', fontSize: '0.9rem' }}>₹{prod.basePrice}</span>
                                 <button 
                                   onClick={() => navigate(`/product/${prod._id}`)}
                                   className="btn" 
-                                  style={{ padding: '0.25rem 0.5rem', background: 'var(--accent-primary)', color: 'white', fontSize: '0.75rem' }}
+                                  style={{ padding: '0.2rem 0.4rem', background: 'var(--accent-primary)', color: 'white', fontSize: '0.7rem', fontWeight: '800' }}
                                 >
                                   View
                                 </button>
@@ -171,15 +172,15 @@ const AIChat = () => {
 
                     {/* Suggested Actions Chips */}
                     {msg.suggestedActions && msg.suggestedActions.length > 0 && (
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
                         {msg.suggestedActions.map((action, i) => (
                           <button 
                             key={i} 
                             onClick={() => handleSend(action)}
                             style={{ 
-                              background: 'transparent', border: '1px solid var(--accent-secondary)', 
-                              color: 'var(--accent-secondary)', padding: '0.4rem 1rem', borderRadius: '20px',
-                              fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s'
+                              background: 'transparent', border: '1px solid var(--accent-secondary)50', 
+                              color: 'var(--accent-secondary)', padding: '0.35rem 0.8rem', borderRadius: '20px',
+                              fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '600'
                             }}
                             onMouseOver={(e) => { e.target.style.background = 'rgba(139, 92, 246, 0.1)'; }}
                             onMouseOut={(e) => { e.target.style.background = 'transparent'; }}
@@ -196,14 +197,14 @@ const AIChat = () => {
 
             {/* Typing Indicator */}
             {isTyping && (
-              <div style={{ display: 'flex', gap: '1rem', maxWidth: '80%' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Bot size={20} color="var(--success)" />
+              <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '80%' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Bot size={16} color="var(--success)" />
                 </div>
-                <div style={{ padding: '1rem 1.5rem', borderRadius: '16px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="dot-typing" style={{ width: '6px', height: '6px', background: 'var(--text-secondary)', borderRadius: '50%', animation: 'fadeIn 1s infinite alternate' }}></span>
-                  <span className="dot-typing" style={{ width: '6px', height: '6px', background: 'var(--text-secondary)', borderRadius: '50%', animation: 'fadeIn 1s infinite alternate 0.2s' }}></span>
-                  <span className="dot-typing" style={{ width: '6px', height: '6px', background: 'var(--text-secondary)', borderRadius: '50%', animation: 'fadeIn 1s infinite alternate 0.4s' }}></span>
+                <div style={{ padding: '0.75rem 1.1rem', borderRadius: '16px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span className="dot-typing" style={{ width: '5px', height: '5px', background: 'var(--text-secondary)', borderRadius: '50%', animation: 'fadeIn 1s infinite alternate' }}></span>
+                  <span className="dot-typing" style={{ width: '5px', height: '5px', background: 'var(--text-secondary)', borderRadius: '50%', animation: 'fadeIn 1s infinite alternate 0.2s' }}></span>
+                  <span className="dot-typing" style={{ width: '5px', height: '5px', background: 'var(--text-secondary)', borderRadius: '50%', animation: 'fadeIn 1s infinite alternate 0.4s' }}></span>
                 </div>
               </div>
             )}
@@ -211,17 +212,17 @@ const AIChat = () => {
           </div>
 
           {/* Input Area */}
-          <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-light)', background: 'rgba(15, 23, 42, 0.6)' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1, background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-light)', padding: '0.5rem', display: 'flex', alignItems: 'center' }}>
+          <div style={{ padding: '1rem', borderTop: '1px solid var(--border-light)', background: 'rgba(15, 23, 42, 0.6)' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-light)', padding: '0.4rem', display: 'flex', alignItems: 'center' }}>
                 <textarea 
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  placeholder="Describe the person, the occasion, or the emotion you want to convey..."
+                  placeholder="Describe the gift or person..."
                   style={{ 
                     flex: 1, background: 'transparent', border: 'none', color: 'white', 
-                    padding: '0.5rem', resize: 'none', height: '50px', outline: 'none', fontFamily: 'Inter' 
+                    padding: '0.4rem', resize: 'none', height: '40px', outline: 'none', fontFamily: 'inherit', fontSize: '0.9rem'
                   }}
                 />
               </div>
@@ -229,14 +230,15 @@ const AIChat = () => {
                 onClick={() => handleSend()} 
                 disabled={!input.trim() || isTyping}
                 className="btn btn-primary" 
-                style={{ height: '50px', width: '50px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', opacity: (!input.trim() || isTyping) ? 0.5 : 1 }}
+                style={{ height: '48px', width: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', opacity: (!input.trim() || isTyping) ? 0.5 : 1 }}
               >
-                <Send size={20} />
+                <Send size={18} />
               </button>
             </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 };

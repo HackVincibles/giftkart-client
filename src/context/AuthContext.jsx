@@ -50,8 +50,13 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await axios.post('/auth/login', { email, password });
-      setUser(res.data.user);
-      return { success: true, role: res.data.user.role };
+      const { user, token } = res.data;
+      setUser(user);
+      if (token) {
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      return { success: true, role: user.role };
     } catch (err) {
       return { success: false, error: err.response?.data?.message || 'Login failed' };
     }
@@ -79,8 +84,13 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const res = await axios.post('/auth/register', userData);
-      setUser(res.data.user);
-      return { success: true, role: res.data.user.role };
+      const { user, token } = res.data;
+      setUser(user);
+      if (token) {
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      return { success: true, role: user.role };
     } catch (err) {
       return { success: false, error: err.response?.data?.message || 'Registration failed' };
     }
@@ -129,8 +139,13 @@ export const AuthProvider = ({ children }) => {
   const googleLogin = async (token, role) => {
     try {
       const res = await axios.post('/auth/google', { token, role });
-      setUser(res.data.user);
-      return { success: true, role: res.data.user.role };
+      const { user, token: jwtToken } = res.data;
+      setUser(user);
+      if (jwtToken) {
+        localStorage.setItem('token', jwtToken);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
+      }
+      return { success: true, role: user.role };
     } catch (err) {
       return { success: false, error: err.response?.data?.message || 'Google Auth failed' };
     }

@@ -15,7 +15,7 @@ const BlockModal = ({ user, onConfirm, onCancel }) => {
       zIndex: 99999, backdropFilter: 'blur(6px)'
     }}>
       <div className="glass-panel" style={{
-        width: '440px', padding: '2rem', borderRadius: '24px',
+        width: '90%', maxWidth: '440px', padding: '1.5rem', borderRadius: '24px',
         border: '1px solid rgba(239,68,68,0.3)', boxShadow: '0 0 60px rgba(239,68,68,0.15)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -83,7 +83,7 @@ const UserModal = ({ user, onClose }) => {
       alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)'
     }} onClick={onClose}>
       <div className="glass-panel" onClick={e => e.stopPropagation()} style={{
-        width: '420px', padding: '2rem', borderRadius: '24px',
+        width: '90%', maxWidth: '420px', padding: '1.5rem', borderRadius: '24px',
         border: `1px solid ${color}40`, boxShadow: `0 0 40px ${color}20`
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
@@ -197,34 +197,35 @@ const AdminUsers = () => {
       {selectedUser && <UserModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
       {blockTarget && <BlockModal user={blockTarget} onConfirm={confirmBlock} onCancel={() => setBlockTarget(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.25rem' }}>User Management</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>{pagination.total || 0} registered users</p>
+          <h1 className="dashboard-title" style={{ fontWeight: '900', marginBottom: '0.25rem' }}>User Management</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{pagination.total || 0} registered users</p>
         </div>
-        <button onClick={fetchUsers} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <button onClick={fetchUsers} className="btn btn-secondary mobile-full-width" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
           <RefreshCw size={16} /> Refresh
         </button>
       </div>
 
-      <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
+      <div className="glass-panel" style={{ padding: '0.75rem', marginBottom: '1.5rem' }}>
         <div style={{ position: 'relative' }}>
           <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input className="input-field" placeholder="Search by name or email..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            style={{ width: '100%', paddingLeft: '2.5rem' }} />
+            style={{ width: '100%', paddingLeft: '2.5rem', fontSize: '0.9rem' }} />
         </div>
       </div>
 
-      <div className="glass-panel" style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+      <div className="glass-panel" style={{ overflowX: 'auto', borderRadius: '16px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
           <thead>
             <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-light)' }}>
               {['User', 'Email', 'Role', 'Status', 'Joined', 'Actions'].map(h => (
-                <th key={h} style={{ padding: '1rem', textAlign: 'left', fontSize: '0.73rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                <th key={h} style={{ padding: '1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
+
           <tbody>
             {loading ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Loading...</td></tr>

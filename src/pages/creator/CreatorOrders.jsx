@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ShoppingBag, Search, ExternalLink, Filter, Clock, CheckCircle, Truck, Package, MoreVertical, AlertCircle, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ShoppingBag, Search, ExternalLink, Filter, Clock, CheckCircle, Truck, Package, MoreVertical, AlertCircle, XCircle, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../../context/ToastContext';
+import ArtisanChat from '../../components/ArtisanChat';
 
 const CreatorOrders = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const { success, error } = useToast();
+    const navigate = useNavigate();
+    const [activeChat, setActiveChat] = useState(null);
 
     useEffect(() => {
         fetchOrders();
@@ -40,6 +44,22 @@ const CreatorOrders = () => {
         }
     };
 
+    const handleTrackingUpdate = async (orderQueueId, courierName, trackingNumber) => {
+        try {
+            const res = await axios.put(`/creator-dashboard/orders/${orderQueueId}/tracking`, {
+                courierName,
+                trackingNumber,
+                estimatedDeliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days
+            });
+            if (res.data.success) {
+                setOrders(orders.map(o => o._id === orderQueueId ? { ...o, status: 'completed' } : o));
+                success('Tracking information updated and buyer notified!');
+            }
+        } catch (err) {
+            error('Failed to update tracking information.');
+        }
+    };
+
     const getStatusIcon = (status) => {
         switch (status) {
             case 'new': return <Clock size={16} color="var(--warning)" />;
@@ -63,6 +83,7 @@ const CreatorOrders = () => {
     const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
     return (
+      <>
         <div className="animate-fade-in">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
@@ -140,7 +161,7 @@ const CreatorOrders = () => {
                                             <td style={{ padding: '1.25rem 1.5rem' }}>
                                                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '100px', fontSize: '0.75rem', fontWeight: '700', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)' }}>
                                                     {getStatusIcon(item.status)}
-                                                    <span style={{ textTransform: 'capitalize' }}>{item.status.replace('-', ' ')}</span>
+                                                    <span style={{ textTransform: 'capitalize' }}>{item.status?.replace('-', ' ') || 'New'}</span>
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1.25rem 1.5rem' }}>
@@ -158,12 +179,23 @@ const CreatorOrders = () => {
                                                         <option value="new">New</option>
                                                         <option value="in-progress">In Progress</option>
                                                         <option value="awaiting-approval">Awaiting Approval</option>
-                                                        <option value="completed">Completed</option>
+                                                        <option value="completed">Completed / Shipped</option>
                                                         <option value="cancelled">Cancelled</option>
                                                     </select>
-                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem' }}>
-                                                        <ExternalLink size={16} />
-                                                    </button>
+                                                    {item.status === 'completed' ? (
+                                                        <button 
+                                                            onClick={() => navigate(`/tracking/${item.order?._id}`)}
+                                                            className="btn btn-secondary" 
+                                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', color: 'var(--success)', borderColor: 'var(--success)' }}
+                                                        >
+                                                            <Truck size={14} style={{ marginRight: '4px' }} /> Track
+                                                        </button>
+                                                    ) : (
+                                                        <button className="btn btn-secondary" style={{ padding: '0.4rem' }}>
+                                                            <ExternalLink size={16} />
+                                                        </button>
+                                                    )}
+
                                                 </div>
                                             </td>
                                         </tr>
@@ -174,8 +206,18 @@ const CreatorOrders = () => {
                     )}
                 </div>
             )}
+
         </div>
-    );
+        {activeChat && (
+            <ArtisanChat 
+                orderId={activeChat.orderId}
+                recipientId={activeChat.recipientId}
+                recipientName={activeChat.recipientName}
+                onClose={() => setActiveChat(null)}
+            />
+        )}
+    </>
+  );
 };
 
 export default CreatorOrders;

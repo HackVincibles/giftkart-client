@@ -56,15 +56,16 @@ const CreatorDashboard = () => {
         </div>
 
         <div className="main-content">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Creator Dashboard</h1>
-              <p style={{ color: 'var(--text-secondary)' }}>Welcome back to your studio, {user?.displayName}.</p>
+              <h1 className="dashboard-title" style={{ fontWeight: '900', marginBottom: '0.25rem' }}>Creator Dashboard</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Welcome back to your studio, {user?.displayName}.</p>
             </div>
-            <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button className="btn btn-primary mobile-full-width" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
               <Package size={18} /> Add New Product
             </button>
           </div>
+
 
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>Loading your studio data...</div>
@@ -100,18 +101,19 @@ const CreatorDashboard = () => {
               </div>
 
               <div style={{ marginTop: '2.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Recent Order Requests</h2>
-                <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <h2 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', fontWeight: '800' }}>Recent Order Requests</h2>
+                <div className="glass-panel" style={{ padding: '0', overflowX: 'auto', borderRadius: '16px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                     <thead>
                       <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Order ID</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Product</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Status</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Customization</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Action</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order ID</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Product</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customization</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action</th>
                       </tr>
                     </thead>
+
                     <tbody>
                       <tr style={{ borderTop: '1px solid var(--border-light)' }}>
                         <td style={{ padding: '1rem' }}>#GK-8924</td>

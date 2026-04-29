@@ -20,10 +20,34 @@ const CreatorAI = () => {
         if (res.data.success) setSuggestions(res.data.data.ideas || []);
       } catch (e) {
         setSuggestions([
-          { title: "Personalized Resin Name Plates with LED", reason: "High demand for home decor personalization during housewarming season.", category: "semi-custom", suggestedPrice: 1200 },
-          { title: "Custom Birth Flower Pressed Art Frame", reason: "Trending on social media as a unique birthday gift alternative.", category: "fully-custom", suggestedPrice: 850 },
-          { title: "Hand-Embroidered Couple Passport Holders", reason: "Wedding gifting season drives demand for matching accessories.", category: "semi-custom", suggestedPrice: 1500 },
-          { title: "Miniature Handcrafted Ganesha Idol Set", reason: "Festival season — Ganesh Chaturthi gifts are in high demand.", category: "standard", suggestedPrice: 2200 }
+          { 
+            title: "Personalized Resin Name Plates with LED", 
+            reason: "High demand for home decor personalization during housewarming season.", 
+            category: "semi-custom", 
+            suggestedPrice: 1200,
+            plan: ["Design digital layout with client name", "Cast in high-quality UV resin with embedded LED strips", "Finish with weather-proof coating for outdoor use"]
+          },
+          { 
+            title: "Custom Birth Flower Pressed Art Frame", 
+            reason: "Trending on social media as a unique birthday gift alternative.", 
+            category: "fully-custom", 
+            suggestedPrice: 850,
+            plan: ["Source seasonal flowers based on birth month", "Carefully press and dry for 7-10 days", "Arrange in a minimalist oak wood frame with custom calligraphy"]
+          },
+          { 
+            title: "Hand-Embroidered Couple Passport Holders", 
+            reason: "Wedding gifting season drives demand for matching accessories.", 
+            category: "semi-custom", 
+            suggestedPrice: 1500,
+            plan: ["Source premium vegan leather holders", "Sketch couple initials or wedding dates", "Embroider using silk threads with traditional Zardosi techniques"]
+          },
+          { 
+            title: "Miniature Handcrafted Ganesha Idol Set", 
+            reason: "Festival season — Ganesh Chaturthi gifts are in high demand.", 
+            category: "standard", 
+            suggestedPrice: 2200,
+            plan: ["Sculpt master mold in eco-friendly clay", "Hand-paint with non-toxic traditional colors", "Package in sustainable bamboo gift boxes"]
+          }
         ]);
       } finally {
         setGenerating(false);
@@ -48,20 +72,30 @@ const CreatorAI = () => {
   const generateIdeas = async () => {
     try {
       setGenerating(true);
-      const res = await axios.get('/creator-dashboard/ai-product-ideas');
-      if (res.data.success) {
-        setSuggestions(res.data.data.ideas || []);
+      setSuggestions([]); // Clear old ideas so user sees loading state
+      const res = await axios.get('/api/creator-dashboard/ai-product-ideas?t=' + Date.now());
+      if (res.data.success && res.data.data.ideas && res.data.data.ideas.length > 0) {
+        setSuggestions(res.data.data.ideas);
         success("New product ideas generated!");
+      } else {
+        throw new Error('Empty response');
       }
     } catch (err) {
       console.error('AI ideas error:', err);
-      // Fallback to curated ideas if API fails
-      setSuggestions([
-        { title: "Personalized Resin Name Plates with LED", reason: "High demand for home decor personalization during housewarming season.", category: "semi-custom", suggestedPrice: 1200 },
-        { title: "Custom Birth Flower Pressed Art Frame", reason: "Trending on social media as a unique birthday gift alternative.", category: "fully-custom", suggestedPrice: 850 },
-        { title: "Hand-Embroidered Couple Passport Holders", reason: "Wedding gifting season drives demand for matching accessories.", category: "semi-custom", suggestedPrice: 1500 },
-        { title: "Miniature Handcrafted Ganesha Idol Set", reason: "Festival season ahead — Ganesh Chaturthi gifts are in high demand.", category: "standard", suggestedPrice: 2200 }
-      ]);
+      // Randomized fallback pools so regeneration always shows different content
+      const allFallbacks = [
+        { title: "Personalized Resin Name Plates with LED", reason: "High demand for home decor personalization during housewarming season.", category: "semi-custom", suggestedPrice: 1200, plan: ["Design digital layout with client name", "Cast in high-quality UV resin with embedded LED strips", "Finish with weather-proof coating for outdoor use"] },
+        { title: "Custom Birth Flower Pressed Art Frame", reason: "Trending on social media as a unique birthday gift alternative.", category: "fully-custom", suggestedPrice: 850, plan: ["Source seasonal flowers based on birth month", "Carefully press and dry for 7-10 days", "Arrange in a minimalist oak wood frame with custom calligraphy"] },
+        { title: "Hand-Embroidered Couple Passport Holders", reason: "Wedding gifting season drives demand for matching accessories.", category: "semi-custom", suggestedPrice: 1500, plan: ["Source premium vegan leather holders", "Sketch couple initials or wedding dates", "Embroider using silk threads with traditional Zardosi techniques"] },
+        { title: "Miniature Handcrafted Ganesha Idol Set", reason: "Festival season — Ganesh Chaturthi gifts are in high demand.", category: "standard", suggestedPrice: 2200, plan: ["Sculpt master mold in eco-friendly clay", "Hand-paint with non-toxic traditional colors", "Package in sustainable bamboo gift boxes"] },
+        { title: "Macramé Plant Hanger with Brass Pot", reason: "Indoor gardening trend is peaking — aesthetic hangers sell fast.", category: "standard", suggestedPrice: 650, plan: ["Source natural cotton macramé cord", "Knot using bohemian spiral pattern", "Attach mini brass pot with jute lining"] },
+        { title: "Customized Zodiac Constellation Lamp", reason: "Personalized astro-themed gifts are trending among Gen-Z.", category: "semi-custom", suggestedPrice: 900, plan: ["Laser-cut zodiac constellation on acrylic sheet", "Install warm-white LED base", "Add engraved name and birthdate on wooden stand"] },
+        { title: "Hand-Painted Warli Art Tote Bag", reason: "Eco-fashion and tribal art fusion is gaining social media traction.", category: "standard", suggestedPrice: 500, plan: ["Source organic canvas tote bags", "Paint traditional Warli motifs with fabric paint", "Heat-set design for wash durability"] },
+        { title: "Personalized Sound Wave Art Print", reason: "Sentimental gifts like voice recordings turned into art are viral.", category: "fully-custom", suggestedPrice: 1800, plan: ["Record client's audio message or song clip", "Convert to visual sound wave pattern", "Print on archival paper with metallic foil accents"] },
+      ];
+      // Shuffle and pick 4
+      const shuffled = allFallbacks.sort(() => Math.random() - 0.5);
+      setSuggestions(shuffled.slice(0, 4));
       success("Showing curated product ideas!");
     } finally {
       setGenerating(false);
@@ -147,7 +181,19 @@ const CreatorAI = () => {
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{idea.reason}</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>{idea.reason}</p>
+                
+                {idea.plan && (
+                  <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', borderLeft: '3px solid var(--accent-primary)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-primary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Execution Plan</div>
+                    <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {idea.plan.map((step, idx) => (
+                        <li key={idx} style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   {idea.suggestedPrice ? (
                     <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--success)' }}>₹{idea.suggestedPrice.toLocaleString()}</span>
@@ -161,7 +207,7 @@ const CreatorAI = () => {
                     }}
                     style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}
                   >
-                    Create Now <ArrowRight size={14} />
+                    Launch Product <ArrowRight size={14} />
                   </button>
                 </div>
               </div>

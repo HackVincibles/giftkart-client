@@ -14,8 +14,9 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleSuccess = (role) => {
-    if (role === 'admin') navigate('/admin');
+    if (role === 'admin') navigate('/admin-dashboard');
     else if (role === 'creator') navigate('/creator-dashboard');
+    else if (role === 'seller') navigate('/seller-dashboard');
     else navigate('/buyer-dashboard');
   };
 
@@ -81,7 +82,7 @@ const Login = () => {
             <div className="input-group">
               <label className="input-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Password</span>
-                <Link to="#" style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>Forgot password?</Link>
+                <Link to="/forgot-password" style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>Forgot password?</Link>
               </label>
               <div style={{ position: 'relative' }}>
                 <Lock size={18} style={{ position: 'absolute', top: '14px', left: '14px', color: 'var(--text-muted)' }} />

@@ -73,19 +73,20 @@ const SocialWishlist = () => {
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
             <Navbar />
             
-            <main className="container animate-fade-in" style={{ padding: '2rem 2rem 4rem 2rem', maxWidth: '1400px', margin: '0 auto', flex: 1 }}>
+            <main className="container animate-fade-in" style={{ padding: '2rem 1rem 4rem 1rem', maxWidth: '1400px', margin: '0 auto', flex: 1 }}>
                 {/* Hero Header */}
                 <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 1.25rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '100px', color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: '800', marginBottom: '1.5rem', border: '1px solid var(--accent-primary)30' }}>
-                        <Users size={16} /> COMMUNITY TRENDS
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 1.25rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '100px', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: '800', marginBottom: '1.25rem', border: '1px solid var(--accent-primary)30' }}>
+                        <Users size={14} /> COMMUNITY TRENDS
                     </div>
-                    <h1 style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1rem', letterSpacing: '-0.04em' }}>
+                    <h1 className="dashboard-title" style={{ fontWeight: '900', marginBottom: '1rem', letterSpacing: '-0.04em' }}>
                         Social <span className="text-gradient">Wishlist</span>
                     </h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', maxWidth: '700px', margin: '0 auto' }}>
-                        Discover what the GiftKart community is loving. These are the most wishlisted and ordered products across the entire platform.
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+                        Discover what the GiftKart community is loving right now.
                     </p>
                 </div>
+
 
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '5rem' }}>
@@ -93,7 +94,9 @@ const SocialWishlist = () => {
                         <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Analyzing community trends...</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                    <div className="grid">
+
+
                         {products.map((product, index) => (
                             <div key={product._id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
                                 <SocialProductCard 
