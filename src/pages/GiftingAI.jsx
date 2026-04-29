@@ -38,7 +38,7 @@ const GiftingAI = () => {
     try {
         const res = await axios.get('/wishlist');
         if (res.data.success) {
-            const ids = new Set(res.data.data.products.map(p => p.product._id));
+            const ids = new Set(res.data.data.products.filter(p => p.product).map(p => p.product._id));
             setWishlistIds(ids);
         }
     } catch (err) {
@@ -62,7 +62,7 @@ const GiftingAI = () => {
     try {
         const res = await axios.get('/payment/my-orders');
         if (res.data.success) {
-            const ids = new Set(res.data.data.flatMap(o => o.items.map(i => i.product?._id || i.product)));
+            const ids = new Set(res.data.data.flatMap(o => (o.products || []).map(i => i.product?._id || i.product)).filter(id => id));
             setOrderedIds(ids);
         }
     } catch (err) {
