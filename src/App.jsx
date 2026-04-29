@@ -19,6 +19,7 @@ import AdminGrievances from './pages/admin/AdminGrievances';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminWalletPage from './pages/admin/AdminWallet';
+import AdminWithdrawals from './pages/admin/AdminWithdrawals';
 import BuyerDashboard from './pages/BuyerDashboard';
 import CreatorDashboard from './pages/CreatorDashboard';
 import SellerLogin from './pages/SellerLogin';
@@ -32,6 +33,7 @@ import SellerOrders from './pages/seller/SellerOrders';
 import SellerAnalytics from './pages/seller/SellerAnalytics';
 import SellerAI from './pages/seller/SellerAI';
 import SellerSettings from './pages/seller/SellerSettings';
+import SellerWallet from './pages/seller/SellerWallet';
 
 // Creator Layout & Pages
 import CreatorLayout from './layouts/CreatorLayout';
@@ -102,6 +104,7 @@ const AppRoutes = () => {
         <Route path="grievances" element={<AdminGrievances />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="wallet" element={<AdminWalletPage />} />
+        <Route path="withdrawals" element={<AdminWithdrawals />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
       
@@ -130,6 +133,7 @@ const AppRoutes = () => {
           <Route path="products" element={<SellerProducts />} />
           <Route path="orders" element={<SellerOrders />} />
           <Route path="analytics" element={<SellerAnalytics />} />
+          <Route path="wallet" element={<SellerWallet />} />
           <Route path="ai" element={<SellerAI />} />
           <Route path="settings" element={<SellerSettings />} />
         </Route>

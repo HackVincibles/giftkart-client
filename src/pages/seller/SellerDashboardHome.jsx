@@ -12,7 +12,7 @@ const SellerDashboardHome = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get('/api/seller-analytics?period=30d');
+        const res = await axios.get('/seller-analytics?period=30d');
         if (res.data.success) {
           setStats(res.data.data);
         }

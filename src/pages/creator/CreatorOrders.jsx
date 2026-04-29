@@ -151,14 +151,15 @@ const CreatorOrders = () => {
                                             <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                                     <select 
-                                                        onChange={(e) => updateStatus(order._id, e.target.value)}
-                                                        value={order.status}
+                                                        onChange={(e) => updateStatus(item._id, e.target.value)}
+                                                        value={item.status}
                                                         style={{ padding: '0.4rem 0.6rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', color: 'var(--text-primary)', fontSize: '0.8rem', cursor: 'pointer' }}
                                                     >
-                                                        <option value="pending">Pending</option>
-                                                        <option value="processing">Processing</option>
-                                                        <option value="shipped">Shipped</option>
-                                                        <option value="delivered">Delivered</option>
+                                                        <option value="new">New</option>
+                                                        <option value="in-progress">In Progress</option>
+                                                        <option value="awaiting-approval">Awaiting Approval</option>
+                                                        <option value="completed">Completed</option>
+                                                        <option value="cancelled">Cancelled</option>
                                                     </select>
                                                     <button className="btn btn-secondary" style={{ padding: '0.4rem' }}>
                                                         <ExternalLink size={16} />

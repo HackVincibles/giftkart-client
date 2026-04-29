@@ -43,7 +43,7 @@ const SellerProducts = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/seller-products');
+      const res = await axios.get('/seller-products');
       if (res.data.success) setProducts(res.data.data.products);
     } catch (err) {
       addToast({ type: 'error', message: err.response?.data?.message || 'Failed to load products' });
@@ -139,9 +139,9 @@ const SellerProducts = () => {
 
       let res;
       if (editing) {
-        res = await axios.put(`/api/seller-products/${editing._id}`, payload);
+        res = await axios.put(`/seller-products/${editing._id}`, payload);
       } else {
-        res = await axios.post('/api/seller-products', payload);
+        res = await axios.post('/seller-products', payload);
       }
       
       if (res.data.success) {
@@ -160,7 +160,7 @@ const SellerProducts = () => {
   const deleteProduct = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
-      const res = await axios.delete(`/api/seller-products/${id}`);
+      const res = await axios.delete(`/seller-products/${id}`);
       if (res.data.success) {
         addToast({ type: 'success', message: 'Product deleted' });
         fetchProducts();

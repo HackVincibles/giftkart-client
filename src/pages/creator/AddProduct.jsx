@@ -94,7 +94,7 @@ const AddProduct = () => {
     };
 
     try {
-      const res = await axios.post('/api/seller-products', payload);
+      const res = await axios.post('/seller-products', payload);
       if (res.data.success) {
         success("Product published successfully!");
         navigate('/creator-dashboard/products');

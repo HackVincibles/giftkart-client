@@ -9,6 +9,7 @@ const navItems = [
   { to: '/seller-dashboard/products', icon: Store, label: 'Products' },
   { to: '/seller-dashboard/orders', icon: ShoppingBag, label: 'Orders' },
   { to: '/seller-dashboard/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/seller-dashboard/wallet', icon: Shield, label: 'Wallet' },
   { to: '/seller-dashboard/ai', icon: Sparkles, label: 'AI Assistant' },
   { to: '/seller-dashboard/settings', icon: Settings, label: 'Settings' },
 ];

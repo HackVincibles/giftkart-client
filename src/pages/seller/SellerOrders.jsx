@@ -13,7 +13,7 @@ const SellerOrders = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/seller-orders' + (statusFilter !== 'all' ? `?status=${statusFilter}` : ''));
+      const res = await axios.get('/seller-orders' + (statusFilter !== 'all' ? `?status=${statusFilter}` : ''));
       if (res.data.success) {
         setOrders(res.data.data.orders);
       }
@@ -30,7 +30,7 @@ const SellerOrders = () => {
 
   const updateStatus = async (orderId, newStatus) => {
     try {
-      const res = await axios.put(`/api/seller-orders/${orderId}/status`, { status: newStatus });
+      const res = await axios.put(`/seller-orders/${orderId}/status`, { status: newStatus });
       if (res.data.success) {
         successToast(`Order marked as ${newStatus}`);
         fetchOrders();

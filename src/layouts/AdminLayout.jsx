@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { LayoutDashboard, Users, Store, ShoppingBag, MessageSquare, BarChart2, Settings, Shield, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShoppingBag, MessageSquare, BarChart2, Settings, Shield, Wallet, Banknote } from 'lucide-react';
 
 const navItems = [
   { to: '/admin-dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/admin-dashboard/grievances', icon: MessageSquare, label: 'Grievances' },
   { to: '/admin-dashboard/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/admin-dashboard/wallet', icon: Wallet, label: 'Admin Wallet' },
+  { to: '/admin-dashboard/withdrawals', icon: Banknote, label: 'Withdrawals' },
   { to: '/admin-dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 

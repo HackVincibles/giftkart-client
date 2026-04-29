@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '../../context/ToastContext';
-import { Save, User, Bell, Link as LinkIcon, Building2 } from 'lucide-react';
+import { Save, User, Bell, Link as LinkIcon, Building2, CreditCard } from 'lucide-react';
 
 const SellerSettings = () => {
   const { addToast } = useToast();
@@ -20,6 +20,13 @@ const SellerSettings = () => {
       facebook: '',
       twitter: ''
     },
+    bankDetails: {
+      accountNumber: '',
+      ifscCode: '',
+      bankName: '',
+      accountHolderName: '',
+      upiId: ''
+    },
     preferences: {
       emailNotifications: true,
       orderAlerts: true,
@@ -34,7 +41,7 @@ const SellerSettings = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/seller-auth/profile');
+      const res = await axios.get('/seller-auth/profile');
       if (res.data.success) {
         const profile = res.data.data;
         setFormData({
@@ -47,6 +54,13 @@ const SellerSettings = () => {
             instagram: profile.socialMedia?.instagram || '',
             facebook: profile.socialMedia?.facebook || '',
             twitter: profile.socialMedia?.twitter || ''
+          },
+          bankDetails: {
+            accountNumber: profile.bankDetails?.accountNumber || '',
+            ifscCode: profile.bankDetails?.ifscCode || '',
+            bankName: profile.bankDetails?.bankName || '',
+            accountHolderName: profile.bankDetails?.accountHolderName || '',
+            upiId: profile.bankDetails?.upiId || ''
           },
           preferences: {
             emailNotifications: profile.preferences?.emailNotifications ?? true,
@@ -71,6 +85,12 @@ const SellerSettings = () => {
         ...prev,
         socialMedia: { ...prev.socialMedia, [socialKey]: value }
       }));
+    } else if (name.startsWith('bank_')) {
+      const bankKey = name.split('_')[1];
+      setFormData(prev => ({
+        ...prev,
+        bankDetails: { ...prev.bankDetails, [bankKey]: value }
+      }));
     } else if (name.startsWith('pref_')) {
       const prefKey = name.split('_')[1];
       setFormData(prev => ({
@@ -86,7 +106,7 @@ const SellerSettings = () => {
     e.preventDefault();
     try {
       setSaving(true);
-      const res = await axios.put('/api/seller-auth/profile', formData);
+      const res = await axios.put('/seller-auth/profile', formData);
       if (res.data.success) {
         addToast({ type: 'success', message: 'Settings saved successfully!' });
       }
@@ -112,6 +132,12 @@ const SellerSettings = () => {
           style={{ background: 'none', border: 'none', color: activeTab === 'profile' ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: activeTab === 'profile' ? '600' : '400', cursor: 'pointer', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
           <Building2 size={18} /> Business Profile
+        </button>
+        <button 
+          onClick={() => setActiveTab('payouts')}
+          style={{ background: 'none', border: 'none', color: activeTab === 'payouts' ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: activeTab === 'payouts' ? '600' : '400', cursor: 'pointer', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+        >
+          <CreditCard size={18} /> Payouts & Bank
         </button>
         <button 
           onClick={() => setActiveTab('notifications')}
@@ -167,6 +193,41 @@ const SellerSettings = () => {
                   <label className="input-label">Twitter</label>
                   <input type="text" className="input-field" name="social_twitter" placeholder="@username" value={formData.socialMedia.twitter} onChange={handleChange} />
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'payouts' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="glass-panel" style={{ padding: '2rem' }}>
+              <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Bank Account Details</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div className="input-group">
+                  <label className="input-label">Account Holder Name</label>
+                  <input type="text" className="input-field" name="bank_accountHolderName" value={formData.bankDetails.accountHolderName} onChange={handleChange} placeholder="As per bank records" />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Bank Name</label>
+                  <input type="text" className="input-field" name="bank_bankName" value={formData.bankDetails.bankName} onChange={handleChange} placeholder="e.g., HDFC Bank" />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Account Number</label>
+                  <input type="text" className="input-field" name="bank_accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} placeholder="Enter your bank account number" />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">IFSC Code</label>
+                  <input type="text" className="input-field" name="bank_ifscCode" value={formData.bankDetails.ifscCode} onChange={handleChange} placeholder="11-digit alphanumeric code" />
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '2rem' }}>
+              <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Digital Payouts (UPI)</h3>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label className="input-label">UPI ID</label>
+                <input type="text" className="input-field" name="bank_upiId" placeholder="username@bank" value={formData.bankDetails.upiId} onChange={handleChange} />
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Used for faster settlements. Funds will be sent to this ID if provided.</p>
               </div>
             </div>
           </div>

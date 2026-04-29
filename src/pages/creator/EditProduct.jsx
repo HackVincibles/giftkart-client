@@ -28,7 +28,7 @@ const EditProduct = () => {
 
   const fetchProductDetails = async () => {
     try {
-      const res = await axios.get(`/api/seller-products/${productId}`);
+      const res = await axios.get(`/seller-products/${productId}`);
       if (res.data.success) {
         const product = res.data.data;
         setFormData({
@@ -110,7 +110,7 @@ const EditProduct = () => {
     };
 
     try {
-      const res = await axios.put(`/api/seller-products/${productId}`, payload);
+      const res = await axios.put(`/seller-products/${productId}`, payload);
       if (res.data.success) {
         success("Product updated successfully!");
         navigate('/creator-dashboard/products');
