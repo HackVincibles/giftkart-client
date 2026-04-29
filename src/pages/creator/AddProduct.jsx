@@ -23,6 +23,25 @@ const AddProduct = () => {
     { fieldName: '', fieldType: 'text', required: true, maxLength: '' }
   ]);
 
+  React.useEffect(() => {
+    const pendingIdea = sessionStorage.getItem('pendingIdea');
+    if (pendingIdea) {
+      try {
+        const idea = JSON.parse(pendingIdea);
+        setFormData(prev => ({
+          ...prev,
+          name: idea.title || '',
+          description: idea.reason || '',
+          category: idea.category || 'semi-custom',
+          basePrice: idea.suggestedPrice || ''
+        }));
+        sessionStorage.removeItem('pendingIdea');
+      } catch (e) {
+        console.error("Error parsing pending idea:", e);
+      }
+    }
+  }, []);
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -75,7 +94,7 @@ const AddProduct = () => {
     };
 
     try {
-      const res = await axios.post('/seller-products', payload);
+      const res = await axios.post('/api/seller-products', payload);
       if (res.data.success) {
         success("Product published successfully!");
         navigate('/creator-dashboard/products');

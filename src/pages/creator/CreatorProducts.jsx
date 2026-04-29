@@ -13,7 +13,7 @@ const CreatorProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('/seller-products');
+      const res = await axios.get('/api/seller-products');
       if (res.data.success) {
         setProducts(res.data.data.products || res.data.data);
       }
@@ -27,7 +27,7 @@ const CreatorProducts = () => {
   const handleDelete = async (productId) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
-      await axios.delete(`/seller-products/${productId}`);
+      await axios.delete(`/api/seller-products/${productId}`);
       setProducts(products.filter(p => p._id !== productId));
     } catch (err) {
       console.error("Failed to delete product:", err);

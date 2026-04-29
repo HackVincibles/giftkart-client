@@ -163,46 +163,7 @@ const BuyerDashboard = () => {
       
       <main className="container animate-fade-in" style={{ padding: '0.5rem 2rem 3rem 2rem', maxWidth: '1400px', margin: '0 auto', flex: 1 }}>
         
-        {/* Premium Status Hub */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1.5rem', marginBottom: '2rem' }}>
-            {/* Wallet Card */}
-            <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--accent-primary)20', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(15, 23, 42, 0.2) 100%)' }}>
-                <div style={{ background: 'var(--accent-primary)', padding: '0.75rem', borderRadius: '16px', color: 'white', boxShadow: '0 8px 20px rgba(139, 92, 246, 0.3)' }}>
-                    <ShoppingBag size={20} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Wallet Balance</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-primary)' }}>₹{walletBalance.toLocaleString()}</div>
-                </div>
-                <Link to="/wallet" style={{ marginLeft: 'auto', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: '700', textDecoration: 'none' }}>Add +</Link>
-            </div>
 
-            {/* Upcoming Occasion Card */}
-            <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--accent-secondary)20' }}>
-                <div style={{ background: 'var(--accent-secondary)', padding: '0.75rem', borderRadius: '16px', color: 'white', boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)' }}>
-                    <Calendar size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Next Event</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {upcomingGift ? upcomingGift.recipientName : 'No events scheduled'}
-                    </div>
-                </div>
-                <Link to="/auto-gifting" style={{ color: 'var(--text-muted)' }}><ArrowRight size={16}/></Link>
-            </div>
-
-            {/* Orders Summary Card */}
-            <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '16px', color: 'var(--text-primary)' }}>
-                    <Package size={20} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Orders</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-primary)' }}>{totalOrders}</div>
-                </div>
-                <Link to="/orders" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}><ArrowRight size={16}/></Link>
-            </div>
-        </div>
 
         {/* Coupons/Offers Section */}
         {coupons.length > 0 && (

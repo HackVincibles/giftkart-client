@@ -16,7 +16,7 @@ const CreatorAI = () => {
     (async () => {
       try {
         setGenerating(true);
-        const res = await axios.get('/creator-dashboard/ai-product-ideas');
+        const res = await axios.get('/api/creator-dashboard/ai-product-ideas');
         if (res.data.success) setSuggestions(res.data.data.ideas || []);
       } catch (e) {
         setSuggestions([
@@ -34,7 +34,7 @@ const CreatorAI = () => {
   const fetchAIInsights = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/creator-dashboard/demand-insights');
+      const res = await axios.get('/api/creator-dashboard/demand-insights');
       if (res.data.success) {
         setInsights(res.data.data);
       }
@@ -48,7 +48,7 @@ const CreatorAI = () => {
   const generateIdeas = async () => {
     try {
       setGenerating(true);
-      const res = await axios.get('/creator-dashboard/ai-product-ideas');
+      const res = await axios.get('/api/creator-dashboard/ai-product-ideas');
       if (res.data.success) {
         setSuggestions(res.data.data.ideas || []);
         success("New product ideas generated!");
@@ -154,9 +154,15 @@ const CreatorAI = () => {
                   ) : (
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>AI Recommended</span>
                   )}
-                  <a href="/creator-dashboard/products/add" style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: '600', textDecoration: 'none' }}>
+                  <button 
+                    onClick={() => {
+                      sessionStorage.setItem('pendingIdea', JSON.stringify(idea));
+                      window.location.href = '/creator-dashboard/products/add';
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}
+                  >
                     Create Now <ArrowRight size={14} />
-                  </a>
+                  </button>
                 </div>
               </div>
             )) : (

@@ -321,16 +321,14 @@ const Navbar = () => {
             <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <LogOut size={16} /> Logout
             </button>
-            {user.role === 'buyer' && (
-              <Link to="/seller-login" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', marginLeft: '0.5rem' }}>Sell on GiftKart</Link>
-            )}
+
           </>
         ) : (
           <>
             <Link to="/login" className="btn btn-secondary">Login</Link>
             <Link to="/register" className="btn btn-primary">Sign Up</Link>
             <div style={{ height: '20px', width: '1px', background: 'var(--border-light)', margin: '0 0.5rem' }}></div>
-            <Link to="/seller-login" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>Sell on GiftKart</Link>
+
           </>
         )}
       </div>
