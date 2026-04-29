@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
-import VoiceAssistant from '../components/VoiceAssistant';
-import { ShoppingBag, Heart, Search, Package, ArrowRight, Loader, Filter, SlidersHorizontal, ChevronDown, Check, X, Sparkles, MessageCircle } from 'lucide-react';
+
+import { ShoppingBag, Heart, Search, Package, ArrowRight, Loader, Filter, SlidersHorizontal, ChevronDown, Check, X, Sparkles, MessageCircle, Tag, Calendar } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
@@ -15,11 +15,12 @@ const BuyerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [wishlistIds, setWishlistIds] = useState(new Set());
   const [orderedProductIds, setOrderedProductIds] = useState(new Set());
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [upcomingGift, setUpcomingGift] = useState(null);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [coupons, setCoupons] = useState([]);
   
-  // Voice State
-  const [voiceRecommendations, setVoiceRecommendations] = useState([]);
-  const [voiceQuery, setVoiceQuery] = useState('');
-  const [voiceMessage, setVoiceMessage] = useState('');
+
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,14 +35,34 @@ const BuyerDashboard = () => {
     fetchProducts();
     fetchWishlist();
     fetchOrders();
+    fetchSummary();
   }, []);
 
-  const handleVoiceResults = (recommendations, query, message) => {
-    setVoiceRecommendations(recommendations.map(r => r.product));
-    setVoiceQuery(query);
-    setVoiceMessage(message);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const fetchSummary = async () => {
+    try {
+        const [walletRes, upcomingRes, couponRes] = await Promise.all([
+            axios.get('/wallet/summary'),
+            axios.get('/auto-gift-calendar/upcoming'),
+            axios.get('/coupons/active')
+        ]);
+        
+        if (walletRes.data.success) {
+            setWalletBalance(walletRes.data.data.balance || 0);
+        }
+        
+        if (upcomingRes.data.success && upcomingRes.data.data.length > 0) {
+            setUpcomingGift(upcomingRes.data.data[0]);
+        }
+
+        if (couponRes.data.success) {
+            setCoupons(couponRes.data.data || []);
+        }
+    } catch (err) {
+        console.error('Summary fetch error:', err);
+    }
   };
+
+
 
   const applyFilters = () => {
     setFilters({ ...pendingFilters });
@@ -70,7 +91,8 @@ const BuyerDashboard = () => {
     try {
         const res = await axios.get('/wishlist');
         if (res.data.success) {
-            const ids = new Set(res.data.data.products.map(p => p.product._id));
+            // Safely map products, filtering out any that might be null (e.g. if product was deleted)
+            const ids = new Set(res.data.data.products.filter(p => p.product).map(p => p.product._id));
             setWishlistIds(ids);
         }
     } catch (err) {
@@ -80,10 +102,13 @@ const BuyerDashboard = () => {
 
   const fetchOrders = async () => {
     try {
-        const res = await axios.get('/payment/my-orders');
+        const res = await axios.get('/payment/orders'); // Corrected from my-orders to orders
         if (res.data.success) {
-            const ids = new Set(res.data.data.flatMap(o => o.items.map(i => i.product?._id || i.product)));
+            // Updated field name to match backend schema (products instead of items)
+            // Added safe navigation and fallback empty array for mapping
+            const ids = new Set(res.data.data.flatMap(o => (o.products || []).map(i => i.product?._id || i.product)).filter(id => id));
             setOrderedProductIds(ids);
+            setTotalOrders(res.data.data.length);
         }
     } catch (err) {
         console.error('Orders fetch error:', err);
@@ -138,6 +163,76 @@ const BuyerDashboard = () => {
       
       <main className="container animate-fade-in" style={{ padding: '0.5rem 2rem 3rem 2rem', maxWidth: '1400px', margin: '0 auto', flex: 1 }}>
         
+        {/* Premium Status Hub */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1.5rem', marginBottom: '2rem' }}>
+            {/* Wallet Card */}
+            <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--accent-primary)20', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(15, 23, 42, 0.2) 100%)' }}>
+                <div style={{ background: 'var(--accent-primary)', padding: '0.75rem', borderRadius: '16px', color: 'white', boxShadow: '0 8px 20px rgba(139, 92, 246, 0.3)' }}>
+                    <ShoppingBag size={20} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Wallet Balance</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-primary)' }}>₹{walletBalance.toLocaleString()}</div>
+                </div>
+                <Link to="/wallet" style={{ marginLeft: 'auto', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: '700', textDecoration: 'none' }}>Add +</Link>
+            </div>
+
+            {/* Upcoming Occasion Card */}
+            <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--accent-secondary)20' }}>
+                <div style={{ background: 'var(--accent-secondary)', padding: '0.75rem', borderRadius: '16px', color: 'white', boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)' }}>
+                    <Calendar size={20} />
+                </div>
+                <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Next Event</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {upcomingGift ? upcomingGift.recipientName : 'No events scheduled'}
+                    </div>
+                </div>
+                <Link to="/auto-gifting" style={{ color: 'var(--text-muted)' }}><ArrowRight size={16}/></Link>
+            </div>
+
+            {/* Orders Summary Card */}
+            <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '16px', color: 'var(--text-primary)' }}>
+                    <Package size={20} />
+                </div>
+                <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Orders</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-primary)' }}>{totalOrders}</div>
+                </div>
+                <Link to="/orders" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}><ArrowRight size={16}/></Link>
+            </div>
+        </div>
+
+        {/* Coupons/Offers Section */}
+        {coupons.length > 0 && (
+            <div style={{ marginBottom: '2.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <Tag size={20} color="var(--accent-primary)" />
+                    <h3 style={{ fontSize: '1rem', fontWeight: '800', margin: 0 }}>Available Offers</h3>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {coupons.map(coupon => (
+                        <div key={coupon._id} className="glass-panel" style={{ minWidth: '280px', padding: '1rem', borderRadius: '18px', border: '1px dashed var(--accent-primary)40', background: 'rgba(139, 92, 246, 0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '700' }}>{coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `₹${coupon.discountValue} OFF`}</div>
+                                <div style={{ fontSize: '1rem', fontWeight: '900', color: 'var(--accent-primary)', letterSpacing: '0.05em' }}>{coupon.code}</div>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(coupon.code);
+                                    success("Coupon code copied!");
+                                }}
+                                style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}
+                            >
+                                COPY
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {/* Extreme Top Search Hero */}
         <div style={{ textAlign: 'center', marginBottom: '1.5rem', marginTop: '0.5rem' }}>
             <h1 style={{ fontSize: '2.4rem', fontWeight: '900', marginBottom: '0.8rem', letterSpacing: '-0.04em' }}>
@@ -230,38 +325,6 @@ const BuyerDashboard = () => {
             </div>
         </div>
 
-        {/* Voice AI Results Section (NEW) */}
-        {voiceRecommendations.length > 0 && (
-            <section className="animate-slide-up" style={{ marginBottom: '3rem', background: 'rgba(139, 92, 246, 0.05)', padding: '2rem', borderRadius: '32px', border: '1px solid var(--accent-primary)20' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                    <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '1.4rem', fontWeight: '900', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <Sparkles color="var(--accent-primary)" size={24} /> AI Voice Recommendations
-                        </h2>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', color: 'var(--text-secondary)' }}>
-                            <MessageCircle size={16} />
-                            <p style={{ fontSize: '0.95rem', fontStyle: 'italic', margin: 0 }}>"{voiceQuery}"</p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => setVoiceRecommendations([])}
-                        style={{ background: 'rgba(0,0,0,0.1)', border: 'none', color: 'var(--text-muted)', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-
-                <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: '20px', marginBottom: '2rem', borderLeft: '4px solid var(--accent-primary)' }}>
-                    <p style={{ margin: 0, fontSize: '1rem', lineHeight: '1.6', color: 'var(--text-primary)' }}>{voiceMessage}</p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-                    {voiceRecommendations.map(product => (
-                        <ProductCard key={product._id} product={product} wishlistIds={wishlistIds} toggleWishlist={toggleWishlist} />
-                    ))}
-                </div>
-            </section>
-        )}
 
         {/* Search Results Section */}
         {searchTerm.trim() && (
@@ -310,7 +373,7 @@ const BuyerDashboard = () => {
       </main>
 
       {/* Voice Assistant Floating UI - Moved outside main for better fixed positioning */}
-      <VoiceAssistant onResultsFound={handleVoiceResults} />
+
     </div>
   );
 };

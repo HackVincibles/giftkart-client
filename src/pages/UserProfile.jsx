@@ -400,20 +400,20 @@ const UserProfile = () => {
                 )}
               </div>
               {displayedTransactions.length > 0 ? displayedTransactions.map(tx => (
-                <div key={tx.id || tx._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ background: tx.type === 'credit' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '8px' }}>
-                      {tx.type === 'credit' ? <ArrowDownLeft size={16} color="var(--success)" /> : <ArrowUpRight size={16} color="var(--danger)" />}
+                  <div key={tx.id || tx._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ background: (tx.type === 'credit' || tx.type === 'deposit') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '8px' }}>
+                        {(tx.type === 'credit' || tx.type === 'deposit') ? <ArrowDownLeft size={16} color="var(--success)" /> : <ArrowUpRight size={16} color="var(--danger)" />}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '0.85rem', fontWeight: '500' }}>{tx.description}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(tx.createdAt || tx.date).toLocaleDateString()}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p style={{ fontSize: '0.85rem', fontWeight: '500' }}>{tx.description}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.date}</p>
-                    </div>
+                    <span style={{ fontWeight: '600', color: (tx.type === 'credit' || tx.type === 'deposit') ? 'var(--success)' : 'var(--danger)' }}>
+                      {(tx.type === 'credit' || tx.type === 'deposit') ? '+' : '-'}₹{tx.amount}
+                    </span>
                   </div>
-                  <span style={{ fontWeight: '600', color: tx.type === 'credit' ? 'var(--success)' : 'white' }}>
-                    {tx.type === 'credit' ? '+' : '-'}₹{tx.amount}
-                  </span>
-                </div>
               )) : (
                   <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1rem' }}>No transactions yet</p>
               )}

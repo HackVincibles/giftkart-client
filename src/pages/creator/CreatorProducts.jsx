@@ -8,32 +8,31 @@ const CreatorProducts = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, fetch from /api/seller-products
-    // Using mock data for UI visualization based on the Product model
-    setTimeout(() => {
-      setProducts([
-        {
-          _id: '1',
-          name: 'Custom Engraved Wooden Frame',
-          category: 'semi-custom',
-          basePrice: 1200,
-          inventory: { stockCount: 45 },
-          isActive: true,
-          images: [{ url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&q=80&w=200' }]
-        },
-        {
-          _id: '2',
-          name: 'AI Generated Memory Scrapbook',
-          category: 'ai-generated',
-          basePrice: 2500,
-          inventory: { stockCount: 999 },
-          isActive: true,
-          images: [{ url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=200' }]
-        }
-      ]);
-      setLoading(false);
-    }, 800);
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get('/seller-products');
+      if (res.data.success) {
+        setProducts(res.data.data.products || res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching seller products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (productId) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    try {
+      await axios.delete(`/seller-products/${productId}`);
+      setProducts(products.filter(p => p._id !== productId));
+    } catch (err) {
+      console.error("Failed to delete product:", err);
+    }
+  };
 
   return (
     <>
@@ -94,10 +93,10 @@ const CreatorProducts = () => {
                       )}
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <button className="btn btn-secondary" style={{ padding: '0.4rem', marginRight: '0.5rem' }}>
+                      <Link to={`/creator-dashboard/products/edit/${product._id}`} className="btn btn-secondary" style={{ padding: '0.4rem', marginRight: '0.5rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Edit2 size={16} />
-                      </button>
-                      <button className="btn btn-secondary" style={{ padding: '0.4rem', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                      </Link>
+                      <button onClick={() => handleDelete(product._id)} className="btn btn-secondary" style={{ padding: '0.4rem', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
                         <Trash2 size={16} />
                       </button>
                     </td>

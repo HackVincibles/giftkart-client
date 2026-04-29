@@ -10,17 +10,42 @@ import { NotificationProvider } from './context/NotificationContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminLayout from './layouts/AdminLayout';
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminSellers from './pages/admin/AdminSellers';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminGrievances from './pages/admin/AdminGrievances';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminWalletPage from './pages/admin/AdminWallet';
 import BuyerDashboard from './pages/BuyerDashboard';
 import CreatorDashboard from './pages/CreatorDashboard';
+import SellerLogin from './pages/SellerLogin';
+import SellerRegister from './pages/SellerRegister';
+
+// Seller Layout & Pages (Phase 1)
+import SellerLayout from './layouts/SellerLayout';
+import SellerDashboardHome from './pages/seller/SellerDashboardHome';
+import SellerProducts from './pages/seller/SellerProducts';
+import SellerOrders from './pages/seller/SellerOrders';
+import SellerAnalytics from './pages/seller/SellerAnalytics';
+import SellerAI from './pages/seller/SellerAI';
+import SellerSettings from './pages/seller/SellerSettings';
 
 // Creator Layout & Pages
 import CreatorLayout from './layouts/CreatorLayout';
-import CreatorDashboardHome from './pages/creator/CreatorDashboardHome';
 import CreatorProducts from './pages/creator/CreatorProducts';
 import AddProduct from './pages/creator/AddProduct';
+import CreatorOrders from './pages/creator/CreatorOrders';
+import CreatorWallet from './pages/creator/CreatorWallet';
+import EditProduct from './pages/creator/EditProduct';
+import CreatorAI from './pages/creator/CreatorAI';
+import CreatorDashboardHome from './pages/creator/CreatorDashboardHome';
+
 
 import AIChat from './pages/AIChat';
+import GiftingAI from './pages/GiftingAI';
 import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import UserProfile from './pages/UserProfile';
@@ -28,7 +53,7 @@ import UserProfile from './pages/UserProfile';
 import AutoGifting from './pages/AutoGifting';
 import MyOrders from './pages/MyOrders';
 import OrderTracking from './pages/OrderTracking';
-import GiftingAI from './pages/GiftingAI';
+
 import Wishlist from './pages/Wishlist';
 import SocialWishlist from './pages/SocialWishlist';
 import PublicWishlist from './pages/PublicWishlist';
@@ -57,36 +82,74 @@ const AppRoutes = () => {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/seller-login" element={<SellerLogin />} />
+      <Route path="/seller-register" element={<SellerRegister />} />
       
+      {/* Redirect /admin → /admin-dashboard for backwards compatibility */}
+      <Route path="/admin" element={<Navigate to="/admin-dashboard" replace />} />
+      <Route path="/admin/*" element={<Navigate to="/admin-dashboard" replace />} />
+
       {/* Admin Routes */}
-      <Route path="/admin/*" element={
+      <Route path="/admin-dashboard" element={
         <ProtectedRoute allowedRoles={['admin']}>
-          <AdminDashboard />
+          <AdminLayout />
         </ProtectedRoute>
-      } />
+      }>
+        <Route index element={<AdminOverview />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="sellers" element={<AdminSellers />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="grievances" element={<AdminGrievances />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="wallet" element={<AdminWalletPage />} />
+        <Route path="settings" element={<AdminSettings />} />
+      </Route>
       
       {/* Creator Routes */}
       <Route path="/creator-dashboard" element={
-        <ProtectedRoute allowedRoles={['creator']}>
+        <ProtectedRoute allowedRoles={['creator', 'seller']}>
           <CreatorLayout />
         </ProtectedRoute>
       }>
         <Route index element={<CreatorDashboardHome />} />
         <Route path="products" element={<CreatorProducts />} />
         <Route path="products/add" element={<AddProduct />} />
+        <Route path="products/edit/:productId" element={<EditProduct />} />
+        <Route path="orders" element={<CreatorOrders />} />
+        <Route path="wallet" element={<CreatorWallet />} />
+        <Route path="ai" element={<CreatorAI />} />
       </Route>
 
-      {/* Buyer Routes */}
-      <Route path="/buyer-dashboard/*" element={
-        <ProtectedRoute allowedRoles={['buyer']}>
-          <BuyerDashboard />
-        </ProtectedRoute>
-      } />
-      
+        {/* Seller Routes */}
+        <Route path="/seller-dashboard/*" element={
+          <ProtectedRoute allowedRoles={['seller']}>
+            <SellerLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<SellerDashboardHome />} />
+          <Route path="products" element={<SellerProducts />} />
+          <Route path="orders" element={<SellerOrders />} />
+          <Route path="analytics" element={<SellerAnalytics />} />
+          <Route path="ai" element={<SellerAI />} />
+          <Route path="settings" element={<SellerSettings />} />
+        </Route>
+
       {/* AI Routes */}
       <Route path="/ai-chat" element={
         <ProtectedRoute allowedRoles={['buyer']}>
           <AIChat />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/gifting-ai" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <GiftingAI />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/buyer-dashboard/*" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <BuyerDashboard />
         </ProtectedRoute>
       } />
       
@@ -110,11 +173,6 @@ const AppRoutes = () => {
       <Route path="/auto-gifting" element={
         <ProtectedRoute allowedRoles={['buyer']}>
           <AutoGifting />
-        </ProtectedRoute>
-      } />
-      <Route path="/gifting-ai" element={
-        <ProtectedRoute allowedRoles={['buyer']}>
-          <GiftingAI />
         </ProtectedRoute>
       } />
       

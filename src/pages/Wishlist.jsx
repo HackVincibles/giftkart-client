@@ -113,7 +113,7 @@ const Wishlist = () => {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-            {wishlist.products.map((item) => (
+            {wishlist.products.filter(item => item.product).map((item) => (
               <div key={item.product._id} className="glass-panel" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ position: 'relative', height: '220px' }}>
                     <img 

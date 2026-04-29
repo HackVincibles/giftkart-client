@@ -66,19 +66,24 @@ const AddProduct = () => {
       description: formData.description,
       category: formData.category,
       basePrice: Number(formData.basePrice),
+      pricing: {
+        base: Number(formData.basePrice)
+      },
       images: formData.images,
       inventory: { stockCount: Number(formData.inventoryStock) },
       customizableFields: customFields.filter(f => f.fieldName !== '')
     };
 
     try {
-      // In a real app, send to backend
-      setTimeout(() => {
-        setLoading(false);
+      const res = await axios.post('/seller-products', payload);
+      if (res.data.success) {
+        success("Product published successfully!");
         navigate('/creator-dashboard/products');
-      }, 1000);
-    } catch (error) {
-      console.error('Failed to create product', error);
+      }
+    } catch (err) {
+      console.error('Failed to create product', err);
+      error(err.response?.data?.message || "Failed to publish product.");
+    } finally {
       setLoading(false);
     }
   };

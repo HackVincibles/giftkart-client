@@ -16,13 +16,30 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is logged in on mount
     const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+
       try {
-        const res = await axios.get('/auth/me');
-        if (res.data && res.data._id) {
-          setUser(res.data);
+        // Try buyer auth first, if fails try seller auth
+        let res;
+        try {
+          res = await axios.get('/auth/me');
+          if (res.data && res.data._id) {
+            setUser(res.data);
+          }
+        } catch (buyerErr) {
+          // If buyer auth fails, try seller profile
+          res = await axios.get('/seller-auth/profile');
+          if (res.data && res.data.success) {
+            setUser({ ...res.data.data, role: 'seller' });
+          }
         }
       } catch (err) {
         console.log('Not authenticated');
+        localStorage.removeItem('token');
+        delete axios.defaults.headers.common['Authorization'];
       } finally {
         setLoading(false);
       }
@@ -40,6 +57,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sellerLogin = async (email, password) => {
+    try {
+      const res = await axios.post('/seller-auth/login', { email, password });
+      const { seller, token } = res.data.data;
+      
+      // Use 'seller' as the role for independent businesses
+      const sellerWithRole = { ...seller, role: 'seller' };
+      setUser(sellerWithRole);
+      
+      // Store token
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      return { success: true, role: 'seller' };
+    } catch (err) {
+      return { success: false, error: err.response?.data?.message || 'Seller login failed' };
+    }
+  };
+
   const register = async (userData) => {
     try {
       const res = await axios.post('/auth/register', userData);
@@ -47,6 +83,46 @@ export const AuthProvider = ({ children }) => {
       return { success: true, role: res.data.user.role };
     } catch (err) {
       return { success: false, error: err.response?.data?.message || 'Registration failed' };
+    }
+  };
+
+  const sellerRegister = async (userData) => {
+    try {
+      // Inject dummy data for required model fields not collected in the simplified UI
+      const fullUserData = {
+        ownerName: userData.name,
+        businessName: userData.studioName,
+        email: userData.email,
+        password: userData.password,
+        phone: '0000000000', // Mock phone
+        panNumber: 'ABCDE1234F', // Mock PAN
+        businessAddress: {
+          street: 'Mock Street',
+          city: 'Mock City',
+          state: 'Mock State',
+          pincode: '000000'
+        },
+        bankDetails: {
+          accountNumber: '0000000000',
+          ifscCode: 'MOCK0000123',
+          bankName: 'Mock Bank',
+          accountHolderName: userData.name
+        }
+      };
+
+      const res = await axios.post('/seller-auth/register', fullUserData);
+      const { seller, token } = res.data.data;
+      
+      const sellerWithRole = { ...seller, role: 'seller' };
+      setUser(sellerWithRole);
+      
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      return { success: true, role: 'seller' };
+    } catch (err) {
+      console.error('Registration error:', err.response?.data);
+      return { success: false, error: err.response?.data?.message || 'Seller registration failed' };
     }
   };
 
@@ -70,7 +146,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, sellerLogin, register, sellerRegister, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

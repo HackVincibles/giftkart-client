@@ -5,12 +5,19 @@ import { TrendingUp, ShoppingCart, Package, Sparkles, DollarSign } from 'lucide-
 
 const CreatorLayout = () => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <Navbar />
       
-      <div className="dashboard-layout animate-fade-in">
-        {/* Creator Sidebar */}
-        <div className="sidebar" style={{ padding: '2rem 1rem' }}>
+      <div className="dashboard-layout animate-fade-in" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Creator Sidebar - Sticky */}
+        <div className="sidebar" style={{ 
+          width: '280px', 
+          height: '100%', 
+          padding: '2rem 1rem', 
+          borderRight: '1px solid var(--border-light)',
+          background: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(10px)'
+        }}>
           <div style={{ marginBottom: '2rem', padding: '0 1rem' }}>
             <h3 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
               Creator Studio
@@ -85,7 +92,7 @@ const CreatorLayout = () => {
           </div>
         </div>
 
-        <div className="main-content">
+        <div className="main-content" style={{ flex: 1, overflowY: 'auto', padding: '2rem', height: '100%' }}>
           <Outlet />
         </div>
       </div>

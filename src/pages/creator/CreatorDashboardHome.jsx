@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Package, DollarSign, Sparkles } from 'lucide-react';
+import axios from 'axios';
 
 const CreatorDashboardHome = () => {
   const { user } = useAuth();
@@ -9,18 +10,29 @@ const CreatorDashboardHome = () => {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    // In a real app, this would fetch from /creator-dashboard
-    // For now, setting mock data after timeout
-    setTimeout(() => {
-      setData({
-        pendingOrders: 12,
-        activeProducts: 34,
-        totalEarnings: '45,200',
-        rating: 4.8
-      });
-      setLoading(false);
-    }, 1000);
+    fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get('/creator-dashboard');
+      if (res.data.success) {
+        setData(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      // Fallback to defaults if API fails
+      setData({
+        pendingOrders: 0,
+        activeProducts: 0,
+        totalEarnings: '0',
+        rating: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -45,7 +57,9 @@ const CreatorDashboardHome = () => {
                 <ShoppingCart size={32} color="var(--warning)" />
                 <p className="stat-value" style={{ margin: 0 }}>{data.pendingOrders}</p>
               </div>
-              <button className="btn btn-secondary mt-4 w-full">View Queue</button>
+              <Link to="/creator-dashboard/orders" className="btn btn-secondary mt-4 w-full" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                View Queue
+              </Link>
             </div>
 
             <div className="stat-card">
@@ -54,16 +68,26 @@ const CreatorDashboardHome = () => {
                 <DollarSign size={32} color="var(--success)" />
                 <p className="stat-value" style={{ margin: 0 }}>₹{data.totalEarnings}</p>
               </div>
-              <button className="btn btn-secondary mt-4 w-full">Withdraw to Bank</button>
+              <Link to="/creator-dashboard/wallet" className="btn btn-secondary mt-4 w-full" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                Withdraw to Bank
+              </Link>
             </div>
 
             <div className="stat-card" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05))', borderColor: 'var(--accent-primary)' }}>
-              <h3 className="stat-label" style={{ color: 'var(--accent-secondary)' }}>AI Insights</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                <Sparkles size={32} color="var(--accent-primary)" />
-                <p style={{ fontWeight: '500', margin: 0 }}>High demand for "Mother's Day" products</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>AI STUDIO INSIGHTS</div>
+                  <p style={{ fontSize: '0.9rem', lineHeight: '1.4', margin: 0 }}>
+                    {data.pendingOrders > 0 
+                      ? `Your "${data.orderQueue?.[0]?.order?.products?.[0]?.name || 'Custom Gift'}" is trending! Priority fulfillment recommended.` 
+                      : "Market analysis suggests adding more 'Minimalist' designs this week."}
+                  </p>
+                </div>
+                <Sparkles size={24} color="var(--accent-primary)" />
               </div>
-              <button className="btn mt-4 w-full" style={{ background: 'var(--accent-primary)', color: 'white' }}>Generate Product Ideas</button>
+              <Link to="/creator-dashboard/ai" className="btn btn-secondary mt-4 w-full" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--accent-primary)' }}>
+                View Full Analysis
+              </Link>
             </div>
           </div>
 
@@ -81,20 +105,34 @@ const CreatorDashboardHome = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderTop: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '1rem' }}>#GK-8924</td>
-                    <td style={{ padding: '1rem' }}>Custom Photo Frame</td>
-                    <td style={{ padding: '1rem' }}><span style={{ color: 'var(--warning)' }}>Pending</span></td>
-                    <td style={{ padding: '1rem' }}>2 Photos, Engraving</td>
-                    <td style={{ padding: '1rem' }}><button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Process</button></td>
-                  </tr>
-                  <tr style={{ borderTop: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '1rem' }}>#GK-8923</td>
-                    <td style={{ padding: '1rem' }}>Memory Scrapbook</td>
-                    <td style={{ padding: '1rem' }}><span style={{ color: 'var(--accent-secondary)' }}>In Production</span></td>
-                    <td style={{ padding: '1rem' }}>AI Poem Included</td>
-                    <td style={{ padding: '1rem' }}><button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Update</button></td>
-                  </tr>
+                  {data.orderQueue && data.orderQueue.length > 0 ? (
+                    data.orderQueue.slice(0, 5).map(item => (
+                      <tr key={item._id} style={{ borderTop: '1px solid var(--border-light)' }}>
+                        <td style={{ padding: '1rem' }}>#{item.order?._id?.slice(-6).toUpperCase() || 'NEW'}</td>
+                        <td style={{ padding: '1rem' }}>{item.order?.products?.map(p => p.name).join(', ') || 'Custom Gift'}</td>
+                        <td style={{ padding: '1rem' }}>
+                          <span style={{ 
+                            color: item.status === 'new' ? 'var(--warning)' : item.status === 'in-progress' ? 'var(--accent-secondary)' : 'var(--success)',
+                            textTransform: 'capitalize'
+                          }}>
+                            {item.status.replace('-', ' ')}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          {item.userInputs?.description || 'Standard Order'}
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <Link to="/creator-dashboard/orders" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                            Process
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No recent orders.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
