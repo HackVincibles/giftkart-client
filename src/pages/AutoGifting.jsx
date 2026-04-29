@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Plus, Gift, Clock, MapPin, ChevronRight, Loader, Edit2, Truck, XCircle, CheckCircle } from 'lucide-react';
@@ -33,12 +33,37 @@ const AutoGifting = () => {
       setEvents(res.data.data.autoGifts || []);
     } catch (err) {
       console.error(err);
-      // Fallback to empty state if backend fails
       setEvents([]);
     } finally {
       setLoading(false);
     }
   };
+
+  const calculateDaysLeft = (dateStr) => {
+    const today = new Date();
+    const eventDate = new Date(dateStr);
+    eventDate.setHours(0, 0, 0, 0);
+    
+    if (eventDate < today) {
+        eventDate.setFullYear(today.getFullYear());
+        if (eventDate < today) {
+            eventDate.setFullYear(today.getFullYear() + 1);
+        }
+    }
+    
+    const diffTime = eventDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const sortedEvents = useMemo(() => {
+    return [...events].sort((a, b) => {
+      const daysA = calculateDaysLeft(a.occasionDate);
+      const daysB = calculateDaysLeft(b.occasionDate);
+      if (daysA !== daysB) return daysA - daysB;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  }, [events]);
 
   useEffect(() => {
     fetchEvents();
@@ -99,24 +124,6 @@ const AutoGifting = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateDaysLeft = (dateStr) => {
-    const today = new Date();
-    const eventDate = new Date(dateStr);
-    eventDate.setHours(0, 0, 0, 0);
-    
-    // If recurring yearly, adjust year to next upcoming
-    if (eventDate < today) {
-        eventDate.setFullYear(today.getFullYear());
-        if (eventDate < today) {
-            eventDate.setFullYear(today.getFullYear() + 1);
-        }
-    }
-    
-    const diffTime = eventDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
   };
 
   const handleCancel = async (id) => {
@@ -257,8 +264,8 @@ const AutoGifting = () => {
             <Loader className="animate-spin" color="var(--accent-primary)" size={40} />
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
-            {events.length > 0 ? events.map(evt => {
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+            {sortedEvents.length > 0 ? sortedEvents.map(evt => {
               const daysLeft = calculateDaysLeft(evt.occasionDate);
               
               return (

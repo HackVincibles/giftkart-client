@@ -323,9 +323,19 @@ const UserProfile = () => {
                 <Wallet color="var(--accent-primary)" /> My Wallet
               </h3>
               
-              <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--accent-primary)', marginBottom: '1.5rem', textAlign: 'center' }}>
+              <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--accent-primary)', marginBottom: '1.5rem', textAlign: 'center', position: 'relative' }}>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Available Balance</p>
-                <h2 style={{ fontSize: '2.5rem', color: 'var(--accent-secondary)' }}>₹{walletBalance}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                    <h2 style={{ fontSize: '2.5rem', color: 'var(--accent-secondary)', margin: 0 }}>
+                        {showBalance ? `₹${walletBalance}` : '₹ ••••'}
+                    </h2>
+                    <button 
+                        onClick={() => setShowBalance(!showBalance)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.5rem' }}
+                    >
+                        {showBalance ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                </div>
               </div>
 
               {/* Action Tabs */}

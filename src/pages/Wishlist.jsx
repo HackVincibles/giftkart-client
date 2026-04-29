@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { Heart, ShoppingCart, Trash2, ArrowRight, Sparkles, Gift, Clock, Tag } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, ArrowRight, Sparkles, Gift, Clock, Tag, Share2, Link as LinkIcon, Lock, Globe, Check } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
@@ -8,6 +8,9 @@ import { useToast } from '../context/ToastContext';
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const { success, error } = useToast();
 
@@ -20,12 +23,37 @@ const Wishlist = () => {
       const res = await axios.get('/wishlist');
       if (res.data.success) {
         setWishlist(res.data.data);
+        setIsPublic(res.data.data.isPublic || false);
+        setShareUrl(res.data.data.shareUrl || '');
       }
     } catch (err) {
       console.error('Error fetching wishlist:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePublic = async () => {
+    try {
+        const newStatus = !isPublic;
+        const res = await axios.put('/wishlist/share', { 
+            isPublic: newStatus 
+        });
+        if (res.data.success) {
+            setIsPublic(newStatus);
+            setShareUrl(res.data.data.shareUrl);
+            success(newStatus ? "Wishlist is now public!" : "Wishlist is now private");
+        }
+    } catch (err) {
+        error("Failed to update sharing settings");
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    success("Link copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const removeFromWishlist = async (productId) => {

@@ -30,6 +30,8 @@ import MyOrders from './pages/MyOrders';
 import OrderTracking from './pages/OrderTracking';
 import GiftingAI from './pages/GiftingAI';
 import Wishlist from './pages/Wishlist';
+import SocialWishlist from './pages/SocialWishlist';
+import PublicWishlist from './pages/PublicWishlist';
 
 // Dummy components for other routes to prevent errors
 const DummyPage = ({ title }) => (
@@ -89,6 +91,7 @@ const AppRoutes = () => {
       } />
       
       {/* Shopping Routes */}
+      <Route path="/wishlist/:wishlistId" element={<PublicWishlist />} />
       <Route path="/product/:id" element={<ProductDetails />} />
       <Route path="/cart" element={
         <ProtectedRoute allowedRoles={['buyer']}>
@@ -129,6 +132,11 @@ const AppRoutes = () => {
       <Route path="/wishlist" element={
         <ProtectedRoute allowedRoles={['buyer']}>
           <Wishlist />
+        </ProtectedRoute>
+      } />
+      <Route path="/social-wishlist" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <SocialWishlist />
         </ProtectedRoute>
       } />
       <Route path="/wallet" element={<DummyPage title="Wallet" />} />

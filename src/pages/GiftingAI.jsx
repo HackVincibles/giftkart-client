@@ -4,6 +4,7 @@ import { Sparkles, Send, Mic, User, Bot, ShoppingCart, Calendar, Heart, Brain, Z
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { fireConfetti } from '../utils/confetti';
 
 const GiftingAI = () => {
   const [messages, setMessages] = useState([
@@ -83,6 +84,7 @@ const GiftingAI = () => {
             await axios.post('/wishlist/add', { productId });
             setWishlistIds(prev => new Set(prev).add(productId));
             success("Added to favorites!");
+            fireConfetti('heart');
         }
     } catch (err) {
         error("Failed to update favorites");
@@ -138,7 +140,8 @@ const GiftingAI = () => {
   const handleOrderNow = async (productId) => {
     try {
         await axios.post('/cart/add', { productId, quantity: 1 });
-        navigate('/cart');
+        fireConfetti('success');
+        setTimeout(() => navigate('/cart'), 1500);
     } catch (err) {
         error("Failed to initiate order.");
     }
@@ -322,9 +325,13 @@ const GiftingAI = () => {
               </div>
             ))}
             {loading && (
-              <div style={{ alignSelf: 'flex-start', background: 'var(--bg-tertiary)', padding: '0.6rem 0.8rem', borderRadius: '14px', display: 'flex', gap: '0.4rem', border: '1px solid var(--border-light)' }}>
-                <Loader className="animate-spin" size={12} color="var(--accent-primary)" />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Thinking...</span>
+              <div style={{ alignSelf: 'flex-start', background: 'var(--bg-tertiary)', padding: '0.75rem 1rem', borderRadius: '16px 16px 16px 2px', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                    <div className="typing-dot" style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', borderRadius: '50%', animation: 'typingDot 1.4s infinite ease-in-out' }}></div>
+                    <div className="typing-dot" style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', borderRadius: '50%', animation: 'typingDot 1.4s infinite ease-in-out 0.2s' }}></div>
+                    <div className="typing-dot" style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', borderRadius: '50%', animation: 'typingDot 1.4s infinite ease-in-out 0.4s' }}></div>
+                </div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600', letterSpacing: '0.02em' }}>GiftKart AI is thinking...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -356,6 +363,10 @@ const GiftingAI = () => {
       </main>
 
       <style>{`
+        @keyframes typingDot {
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+          40% { transform: scale(1.1); opacity: 1; }
+        }
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }

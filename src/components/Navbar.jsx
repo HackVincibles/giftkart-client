@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { LogOut, User as UserIcon, Gift, ShoppingCart, X, Bell, Trash2, Check, Sparkles, Calendar, Heart } from 'lucide-react';
+import { LogOut, User as UserIcon, Gift, ShoppingCart, X, Bell, Trash2, Check, Sparkles, Calendar, Heart, Users } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -31,17 +31,24 @@ const Navbar = () => {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: '1rem 2rem',
-      backgroundColor: 'var(--bg-secondary)',
+      padding: '0.75rem 2rem',
+      backgroundColor: 'rgba(15, 23, 42, 0.8)', // Semi-transparent dark background
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
       borderBottom: '1px solid var(--border-light)',
       height: '70px',
-      position: 'relative',
-      zIndex: 1000
+      position: 'sticky',
+      top: 0,
+      zIndex: 1000,
+      width: '100%'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Gift color="var(--accent-primary)" size={28} />
-          <Link to="/" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', fontFamily: 'Outfit', textDecoration: 'none' }}>
+          <Link 
+            to={user ? (user.role === 'buyer' ? '/buyer-dashboard' : user.role === 'creator' ? '/creator-dashboard' : '/admin-dashboard') : '/'} 
+            style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', fontFamily: 'Outfit', textDecoration: 'none' }}
+          >
             Gift<span className="text-gradient">Kart</span>
           </Link>
         </div>
@@ -49,8 +56,8 @@ const Navbar = () => {
         {user?.role === 'buyer' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft: '1rem' }}>
             <Link to="/buyer-dashboard" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500' }} className="hover:text-primary transition-colors">Marketplace</Link>
-            <Link to="/gifting-ai" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }} className="hover:text-primary transition-colors">
-              <Sparkles size={16} color="var(--accent-primary)" /> Gifting AI
+            <Link to="/social-wishlist" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }} className="hover:text-primary transition-colors">
+              <Users size={16} color="var(--accent-primary)" /> Social Wishlist
             </Link>
             <Link to="/auto-gifting" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }} className="hover:text-primary transition-colors">
               <Calendar size={16} color="var(--accent-secondary)" /> Calendar
