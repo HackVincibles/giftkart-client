@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 
-import { ShoppingBag, Heart, Search, Package, ArrowRight, Loader, Filter, SlidersHorizontal, ChevronDown, Check, X, Sparkles, MessageCircle, Tag, Calendar } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Package, ArrowRight, Loader, Filter, SlidersHorizontal, ChevronDown, Check, X, Sparkles, MessageCircle, Tag, Calendar, Wallet } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
@@ -161,7 +161,8 @@ const BuyerDashboard = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Navbar />
       
-      <main className="container animate-fade-in" style={{ padding: '0.5rem 2rem 3rem 2rem', maxWidth: '1400px', margin: '0 auto', flex: 1 }}>
+      <main className="container animate-fade-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', flex: 1 }}>
+        
         
 
 
