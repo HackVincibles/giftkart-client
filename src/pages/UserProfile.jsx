@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { User, Camera, Mail, MapPin, Wallet, CreditCard, ShieldCheck, Loader, Save, Edit2, X, Trash2, Send, Building, ArrowUpRight, ArrowDownLeft, Eye, EyeOff } from 'lucide-react';
+import { User, Camera, Mail, MapPin, Wallet, CreditCard, ShieldCheck, Loader, Save, Edit2, X, Trash2, Building, Store, ArrowRight, UserCheck, Settings, Bell, Palette, Gift, Copy, Check, MessageSquare, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { uploadToCloudinary } from '../utils/cloudinary';
 import { useAuth } from '../context/AuthContext';
@@ -11,153 +11,158 @@ const UserProfile = () => {
   const { user, logout } = useAuth();
   const { success, error, info } = useToast();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('profile'); 
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  
-  // Edit Modes
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isEditingBank, setIsEditingBank] = useState(false);
-
-  // Avatar Modal
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
-
-  // Delete Account
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteStep, setDeleteStep] = useState('confirm'); // 'confirm' | 'otp' | 'deleting' | 'done'
-  const [deleteOtp, setDeleteOtp] = useState('');
-  const [deleteSending, setDeleteSending] = useState(false);
-  const [deleteConfirming, setDeleteConfirming] = useState(false);
-
-  // Wallet actions
-  const [walletAction, setWalletAction] = useState('add'); // 'add', 'withdraw', 'send'
-  const [actionAmount, setActionAmount] = useState('');
-  const [upiId, setUpiId] = useState('');
-  const [processingAction, setProcessingAction] = useState(false);
-  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [referralData, setReferralData] = useState({ code: '', stats: { totalReferred: 0, pendingRewards: 0, totalEarned: 0 } });
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [grievances, setGrievances] = useState([]);
+  const [loadingGrievances, setLoadingGrievances] = useState(false);
+  const [showGrievanceForm, setShowGrievanceForm] = useState(false);
+  const [grievanceData, setGrievanceData] = useState({ category: 'product_quality', subject: '', description: '' });
   
   const [profileData, setProfileData] = useState({
-    displayName: user?.displayName || '',
+    displayName: user?.displayName || user?.name || '',
     email: user?.email || '',
     avatar: user?.avatar || '',
     role: user?.role || 'buyer',
-    street: '',
-    city: '',
-    pincode: ''
+    phone: '',
+    address: { street: '', city: '', state: '', pincode: '' }
   });
 
-  const [bankData, setBankData] = useState({
-    bankName: '',
-    accountNumber: '',
-    ifscCode: '',
-    upiId: ''
+  const [roleData, setRoleData] = useState({
+    businessName: '',
+    studioName: '',
+    bio: '',
+    bankDetails: { bankName: '', accountNumber: '', ifsc: '' }
   });
-  
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [transactions, setTransactions] = useState([]);
-  const [salesHistory, setSalesHistory] = useState([]);
-  const [referralData, setReferralData] = useState({ code: '', count: 0, totalEarned: 0 });
-
-  const [showBalance, setShowBalance] = useState(false);
 
   useEffect(() => {
-    // Load Razorpay Script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    document.body.appendChild(script);
-
-    // Fetch real profile data
-    const fetchProfileData = async () => {
-      try {
-        const res = await axios.get('/profile/me');
-        if (res.data.success) {
-          const { profile, wallet, transactions } = res.data;
-          setProfileData({
-            displayName: profile.displayName || '',
-            email: profile.email || '',
-            avatar: profile.avatar || '',
-            role: profile.role || 'buyer',
-            street: profile.billingAddress?.street || profile.buyerProfile?.shippingAddress?.street || '',
-            city: profile.billingAddress?.city || profile.buyerProfile?.shippingAddress?.city || '',
-            pincode: profile.billingAddress?.zipCode || profile.buyerProfile?.shippingAddress?.zip || ''
-          });
-
-          if (profile.creatorProfile?.bankDetails) {
-            setBankData({
-              bankName: profile.creatorProfile.bankDetails.bankName || '',
-              accountNumber: profile.creatorProfile.bankDetails.accountNumber || '',
-              ifscCode: profile.creatorProfile.bankDetails.ifsc || '',
-              upiId: profile.creatorProfile.bankDetails.upiId || ''
-            });
-          }
-
-          setWalletBalance(wallet.balance || 0);
-          setTransactions(transactions || []);
-
-          // If creator, fetch orders
-          if (profile.role === 'creator') {
-            const orderRes = await axios.get('/analytics/creator');
-            if (orderRes.data.success) {
-              setSalesHistory(orderRes.data.recentOrders || []);
-            }
-          }
-
-          // Fetch referral info
-          const refCodeRes = await axios.get('/referral/code');
-          const refStatsRes = await axios.get('/referral/stats');
-          setReferralData({
-            code: refCodeRes.data.code,
-            count: refStatsRes.data.count,
-            totalEarned: refStatsRes.data.totalEarned
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-      }
-    };
-    fetchProfileData();
+    fetchData();
+    fetchReferral();
   }, []);
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  useEffect(() => {
+    if (activeTab === 'support') {
+      fetchGrievances();
+    }
+  }, [activeTab]);
 
-    setUploadingImage(true);
+  const fetchGrievances = async () => {
+    setLoadingGrievances(true);
     try {
-      const url = await uploadToCloudinary(file);
-      await axios.put('/profile/update', { avatar: url });
-      setProfileData(prev => ({ ...prev, avatar: url }));
-      success("Avatar uploaded successfully!");
-    } catch (err) {
-      error("Failed to upload avatar.");
+      const res = await axios.get('/settings/grievances');
+      if (res.data.success) {
+        setGrievances(res.data.data.grievances);
+      }
+    } catch { 
+      error("Failed to load support tickets"); 
     } finally {
-      setUploadingImage(false);
+      setLoadingGrievances(false);
     }
   };
 
-  const handleRemoveAvatar = async () => {
-    try {
-      await axios.put('/profile/update', { avatar: '' });
-      setProfileData(prev => ({ ...prev, avatar: '' }));
-      success("Avatar removed successfully!");
-    } catch (err) {
-      error("Failed to remove avatar.");
-    }
-  };
-
-  const handleSaveProfile = async (e) => {
+  const handleGrievanceSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     try {
+      const res = await axios.post('/settings/grievances', grievanceData);
+      if (res.data.success) {
+        success("Support ticket created!");
+        setShowGrievanceForm(false);
+        setGrievanceData({ category: 'product_quality', subject: '', description: '' });
+        fetchGrievances();
+      }
+    } catch {
+      error("Failed to submit ticket");
+    }
+  };
+
+  const fetchReferral = async () => {
+    try {
+      const [codeRes, statsRes] = await Promise.all([
+        axios.get('/referral/code'),
+        axios.get('/referral/stats')
+      ]);
+      setReferralData({
+        code: codeRes.data?.referralCode || codeRes.data?.code || '',
+        stats: statsRes.data?.stats || { totalReferred: 0, pendingRewards: 0, totalEarned: 0 }
+      });
+    } catch {}
+  };
+
+  const handleCopyCode = () => {
+    const link = `${window.location.origin}/register?ref=${referralData.code}`;
+    navigator.clipboard.writeText(link);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get('/profile/me');
+      if (res.data.success) {
+        const p = res.data.profile;
+        setProfileData({
+          displayName: p.displayName || p.name || '',
+          email: p.email || '',
+          avatar: p.avatar || '',
+          role: p.role || 'buyer',
+          phone: p.phoneNumber || '',
+          address: {
+            street: p.billingAddress?.street || p.buyerProfile?.shippingAddress?.street || '',
+            city: p.billingAddress?.city || p.buyerProfile?.shippingAddress?.city || '',
+            state: p.billingAddress?.state || p.buyerProfile?.shippingAddress?.state || '',
+            pincode: p.billingAddress?.zipCode || p.buyerProfile?.shippingAddress?.zip || ''
+          }
+        });
+
+        if (p.role === 'creator') {
+            setRoleData({
+                studioName: p.creatorProfile?.studioName || '',
+                bio: p.creatorProfile?.bio || '',
+                bankDetails: {
+                    bankName: p.creatorProfile?.bankDetails?.bankName || '',
+                    accountNumber: p.creatorProfile?.bankDetails?.accountNumber || '',
+                    ifsc: p.creatorProfile?.bankDetails?.ifsc || ''
+                }
+            });
+        }
+      }
+      
+      if (user?.role === 'seller') {
+          const sRes = await axios.get('/seller-auth/me');
+          if (sRes.data.success) {
+              const s = sRes.data.seller;
+              setRoleData(prev => ({
+                  ...prev,
+                  businessName: s.businessName || '',
+                  bio: s.description || '',
+                  bankDetails: {
+                      bankName: s.bankDetails?.bankName || '',
+                      accountNumber: s.bankDetails?.accountNumber || '',
+                      ifsc: s.bankDetails?.ifscCode || ''
+                  }
+              }));
+          }
+      }
+    } catch (err) {
+      console.error("Fetch profile failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
       await axios.put('/profile/update', {
         displayName: profileData.displayName,
-        billingAddress: {
-          street: profileData.street,
-          city: profileData.city,
-          zipCode: profileData.pincode
-        }
+        phoneNumber: profileData.phone,
+        billingAddress: profileData.address
       });
       success("Profile updated successfully!");
-      setIsEditingProfile(false);
     } catch (err) {
       error("Failed to update profile.");
     } finally {
@@ -165,663 +170,382 @@ const UserProfile = () => {
     }
   };
 
-  const handleSaveBank = async (e) => {
+  const handleUpdateRoleData = async (e) => {
     e.preventDefault();
-    setLoading(true);
     try {
-      await axios.put('/profile/role-data', {
-        bankDetails: {
-          bankName: bankData.bankName,
-          accountNumber: bankData.accountNumber,
-          ifsc: bankData.ifscCode,
-          upiId: bankData.upiId
-        }
-      });
-      success("Bank details linked successfully!");
-      setIsEditingBank(false);
+      setLoading(true);
+      if (profileData.role === 'creator') {
+          await axios.put('/profile/role-data', {
+            creatorProfile: {
+                studioName: roleData.studioName,
+                bio: roleData.bio,
+                bankDetails: roleData.bankDetails
+            }
+          });
+      } else if (profileData.role === 'seller') {
+          await axios.put('/seller-auth/profile', {
+              businessName: roleData.businessName,
+              description: roleData.bio,
+              bankDetails: roleData.bankDetails
+          });
+      }
+      success("Professional profile updated!");
     } catch (err) {
-      error("Failed to link bank details. Ensure you are a creator.");
+      error("Update failed.");
     } finally {
       setLoading(false);
     }
   };
 
-  const processWalletAction = async () => {
-    if (!actionAmount || isNaN(actionAmount) || Number(actionAmount) <= 0) return;
-    setProcessingAction(true);
-    
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingImage(true);
     try {
-      if (walletAction === 'add') {
-        const orderRes = await axios.post('/wallet/add-money', { amount: Number(actionAmount) });
-        
-        if (orderRes.data.order) {
-          const options = {
-              key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'dummy',
-              amount: orderRes.data.order.amount,
-              currency: "INR",
-              order_id: orderRes.data.order.id,
-              name: "GiftKart Wallet",
-              description: "Add Funds to Wallet",
-              handler: async function (response) {
-                 try {
-                   const verifyRes = await axios.post('/wallet/verify-payment', response);
-                   setWalletBalance(verifyRes.data.balance);
-                   // Refresh transactions
-                   const profileRes = await axios.get('/profile/me');
-                   if (profileRes.data.success) setTransactions(profileRes.data.transactions);
-                   
-                   setActionAmount('');
-                   success('Funds added successfully!');
-                 } catch (err) {
-                   error('Payment verification failed.');
-                 }
-              },
-              theme: { color: "#8b5cf6" }
-          };
-          const rzp = new window.Razorpay(options);
-          rzp.open();
-        }
-      } 
-      else if (walletAction === 'withdraw') {
-        const res = await axios.post('/wallet/request-withdrawal', { amount: Number(actionAmount) });
-        if (res.data.success) {
-          // Refresh data
-          const profileRes = await axios.get('/profile/me');
-          if (profileRes.data.success) {
-            setWalletBalance(profileRes.data.wallet.balance);
-            setTransactions(profileRes.data.transactions);
-          }
-          setActionAmount('');
-          success('Withdrawal request submitted!');
-        }
-      }
-      else if (walletAction === 'send') {
-        if (!upiId) {
-          error('Please enter a valid UPI ID');
-          return;
-        }
-        const res = await axios.post('/wallet/request-withdrawal', { amount: Number(actionAmount) });
-        if (res.data.success) {
-          // Refresh data
-          const profileRes = await axios.get('/profile/me');
-          if (profileRes.data.success) {
-            setWalletBalance(profileRes.data.wallet.balance);
-            setTransactions(profileRes.data.transactions);
-          }
-          setActionAmount('');
-          setUpiId('');
-          success('Money sent successfully via UPI details!');
-        }
-      }
+      const url = await uploadToCloudinary(file);
+      await axios.put('/profile/update', { avatar: url });
+      setProfileData(prev => ({ ...prev, avatar: url }));
+      success("Avatar updated!");
     } catch (err) {
-      console.error("Action failed", err);
-      error(err.response?.data?.message || 'Failed to process request.');
+      error("Upload failed.");
     } finally {
-      if (walletAction !== 'add') setProcessingAction(false); 
-      else setTimeout(() => setProcessingAction(false), 1000);
-    }
-  };
-
-  const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 5);
-
-  // Delete Account handlers
-  const handleRequestDelete = async () => {
-    try {
-      setDeleteSending(true);
-      const res = await axios.post('/profile/delete-request');
-      if (res.data.success) {
-        setDeleteStep('otp');
-        success('Verification OTP sent to your email!');
-      }
-    } catch (err) {
-      error(err.response?.data?.message || 'Failed to send OTP.');
-    } finally {
-      setDeleteSending(false);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteOtp || deleteOtp.length !== 6) {
-      error('Please enter a valid 6-digit OTP.');
-      return;
-    }
-    try {
-      setDeleteConfirming(true);
-      setDeleteStep('deleting');
-      const res = await axios.post('/profile/delete-confirm', { otp: deleteOtp });
-      if (res.data.success) {
-        setDeleteStep('done');
-        success('Your account has been permanently deleted.');
-        setTimeout(() => {
-          logout();
-          navigate('/');
-        }, 2500);
-      }
-    } catch (err) {
-      setDeleteStep('otp');
-      error(err.response?.data?.message || 'Failed to delete account.');
-    } finally {
-      setDeleteConfirming(false);
+      setUploadingImage(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
+    <div className="kl-root">
       <Navbar />
       
-      {/* Avatar Modal */}
-      {showAvatarModal && profileData.avatar && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-          background: 'rgba(0,0,0,0.85)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)'
-        }}>
-          <div className="glass-panel" style={{ padding: '2rem', maxWidth: '450px', width: '90%', textAlign: 'center', position: 'relative', border: '1px solid var(--accent-primary)' }}>
-            <button onClick={() => setShowAvatarModal(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%' }}>
-              <X size={20} />
-            </button>
-            <h3 style={{ marginBottom: '1.5rem', fontFamily: 'Outfit' }}>Profile Picture</h3>
-            <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem', border: '2px solid var(--border-light)' }}>
-              <img src={profileData.avatar} alt="Full Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <label className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.6rem 1.2rem' }}>
-                <Camera size={18} /> Change
-                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
-              </label>
-              <button onClick={handleRemoveAvatar} className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem' }}>
-                <Trash2 size={18} /> Remove
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hero Banner Section */}
-      <div style={{ 
-        height: '220px', 
-        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)', 
-        position: 'relative',
-        width: '100%'
-      }}>
-        <div className="bg-mesh" style={{ position: 'absolute', inset: 0, opacity: 0.6 }}></div>
-        <div className="container" style={{ height: '100%', position: 'relative' }}>
-            <div style={{ position: 'absolute', bottom: '-60px', left: '2rem', display: 'flex', alignItems: 'flex-end', gap: '1.5rem' }}>
-                <div style={{ position: 'relative' }}>
-                    <div style={{ 
-                        width: '140px', 
-                        height: '140px', 
-                        borderRadius: '24px', 
-                        background: 'var(--bg-secondary)', 
-                        border: '5px solid var(--bg-primary)',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        {uploadingImage ? (
-                            <Loader className="animate-spin" color="var(--accent-primary)" size={40} />
-                        ) : profileData.avatar ? (
-                            <img 
-                                src={profileData.avatar} 
-                                alt="Profile" 
-                                onClick={() => setShowAvatarModal(true)}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
-                            />
-                        ) : (
-                            <User size={60} color="var(--text-muted)" />
-                        )}
+      <main className="container" style={{ paddingTop: '8rem', paddingBottom: '8rem' }}>
+        <div style={{ display: 'flex', gap: '4rem' }} className="mobile-stack">
+            <aside style={{ width: '280px', flexShrink: 0 }}>
+                <div style={{ position: 'sticky', top: '8rem' }}>
+                    <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+                        <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem auto' }}>
+                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-secondary)', border: '4px solid var(--bg)', boxShadow: 'var(--shadow)' }}>
+                                {uploadingImage ? <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader className="animate-spin" size={24} /></div> : 
+                                 profileData.avatar ? <img src={profileData.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 
+                                 <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={48} color="var(--text-light)" /></div>}
+                            </div>
+                            <label style={{ position: 'absolute', bottom: '0', right: '0', background: 'var(--accent)', color: 'var(--white)', padding: '0.6rem', borderRadius: '50%', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
+                                <Camera size={16} />
+                                <input type="file" style={{ display: 'none' }} onChange={handleAvatarUpload} />
+                            </label>
+                        </div>
+                        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>{profileData.displayName}</h2>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{profileData.role}</p>
                     </div>
-                    <label style={{ 
-                        position: 'absolute', bottom: '5px', right: '5px', background: 'var(--accent-primary)', 
-                        width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                        cursor: 'pointer', border: '3px solid var(--bg-primary)', transition: 'transform 0.2s',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
-                    }} className="hover:scale-110">
-                        <Camera size={18} color="white" />
-                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} disabled={uploadingImage} />
-                    </label>
-                </div>
-                <div style={{ marginBottom: '1rem', paddingBottom: '0.5rem' }}>
-                    <h1 style={{ fontSize: '2.2rem', margin: 0, fontWeight: '800', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{profileData.displayName}</h1>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.9 }}>
-                        <span style={{ 
-                            background: profileData.role === 'creator' ? 'linear-gradient(to right, #f59e0b, #d97706)' : 'linear-gradient(to right, #8b5cf6, #6d28d9)', 
-                            padding: '2px 12px', 
-                            borderRadius: '20px', 
-                            fontSize: '0.75rem', 
-                            fontWeight: '700', 
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
-                        }}>
-                            {profileData.role}
-                        </span>
-                        <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: '500' }}>• Member since 2024</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-      </div>
 
-      <main className="container animate-fade-in" style={{ padding: '80px 2rem 4rem 2rem', flex: 1 }}>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }} className="mobile-stack">
-          
-          {/* Section 1: Information & Wallet */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            
-            {/* Personal Details Section */}
-            <div className="glass-panel" style={{ padding: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h3 style={{ fontSize: '1.4rem', margin: 0, fontFamily: 'Outfit' }}>Personal Information</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.2rem' }}>Manage your profile and contact details</p>
-                </div>
-                {!isEditingProfile ? (
-                  <button onClick={() => setIsEditingProfile(true)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem' }}>
-                    <Edit2 size={16} /> Edit
-                  </button>
-                ) : (
-                  <button onClick={() => setIsEditingProfile(false)} className="btn btn-secondary" style={{ padding: '0.5rem 1rem' }}>Cancel</button>
-                )}
-              </div>
-              
-              {!isEditingProfile ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div>
-                        <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.4rem', fontWeight: '700', textTransform: 'uppercase' }}>Full Name</label>
-                        <p style={{ fontSize: '1rem', fontWeight: '600', margin: 0 }}>{profileData.displayName}</p>
-                    </div>
-                    <div>
-                        <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.4rem', fontWeight: '700', textTransform: 'uppercase' }}>Email</label>
-                        <p style={{ fontSize: '1rem', fontWeight: '600', margin: 0 }}>{profileData.email}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.4rem', fontWeight: '700', textTransform: 'uppercase' }}>Address</label>
-                    <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', margin: 0, lineHeight: 1.5 }}>
-                      {profileData.street ? `${profileData.street}, ${profileData.city}, ${profileData.pincode}` : 'No address added'}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <input type="text" className="input-field" value={profileData.displayName} onChange={(e) => setProfileData({...profileData, displayName: e.target.value})} required placeholder="Full Name" />
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-                    <input type="text" className="input-field" value={profileData.city} onChange={(e) => setProfileData({...profileData, city: e.target.value})} placeholder="City" />
-                    <input type="text" className="input-field" value={profileData.pincode} onChange={(e) => setProfileData({...profileData, pincode: e.target.value})} placeholder="Pincode" />
-                  </div>
-                  <input type="text" className="input-field" value={profileData.street} onChange={(e) => setProfileData({...profileData, street: e.target.value})} placeholder="Full Street Address" />
-                  <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</button>
-                </form>
-              )}
-            </div>
-
-            {/* Wallet Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }} className="mobile-stack">
-              <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', margin: 0 }}>Available Balance</h3>
-                  <div style={{ padding: '0.4rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px' }}><Wallet size={20} color="var(--accent-primary)" /></div>
-                </div>
-                <h2 style={{ fontSize: '2.8rem', fontWeight: '800', margin: 0 }}>₹{showBalance ? walletBalance.toLocaleString() : '•••••'}</h2>
-                <button onClick={() => setShowBalance(!showBalance)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', marginTop: '0.5rem', textAlign: 'left' }}>
-                  {showBalance ? 'Hide balance' : 'Show balance'}
-                </button>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                  {['add', 'send', 'withdraw'].map(mode => (
-                    <button key={mode} onClick={() => setWalletAction(mode)} style={{ 
-                      flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none', fontSize: '0.75rem', fontWeight: '700',
-                      background: walletAction === mode ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)',
-                      color: walletAction === mode ? 'white' : 'var(--text-muted)', cursor: 'pointer'
-                    }}>{mode.toUpperCase()}</button>
-                  ))}
-                </div>
-                <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>₹</span>
-                  <input type="number" className="input-field" style={{ paddingLeft: '2rem', fontSize: '1.1rem' }} placeholder="0" value={actionAmount} onChange={(e) => setActionAmount(e.target.value)} />
-                </div>
-                {walletAction === 'send' && <input type="text" className="input-field" placeholder="UPI ID (user@upi)" style={{ marginBottom: '1rem' }} value={upiId} onChange={(e) => setUpiId(e.target.value)} />}
-                <button onClick={processWalletAction} disabled={processingAction} className="btn btn-primary" style={{ width: '100%', padding: '0.8rem' }}>
-                  {processingAction ? 'Processing...' : 'Confirm Action'}
-                </button>
-              </div>
-            </div>
-
-            {/* Referral Section (New Phase 6) */}
-            <div className="glass-panel" style={{ padding: '2rem', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%)', border: '1px solid var(--accent-primary)30' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Send size={20} color="var(--accent-primary)" /> Refer & Earn ₹50
-                  </h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.2rem' }}>Invite friends and both get credits!</p>
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px dashed var(--accent-primary)50' }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Your Referral Code</p>
-                  <p style={{ fontSize: '1.4rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--accent-primary)', margin: 0 }}>{referralData.code || 'GENERATING...'}</p>
-                </div>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(referralData.code);
-                    success("Code copied to clipboard!");
-                  }}
-                  className="btn btn-secondary" 
-                  style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}
-                >
-                  Copy
-                </button>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.5rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>{referralData.count}</p>
-                  <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Friends Joined</p>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: 0, color: '#10b981' }}>₹{referralData.totalEarned}</p>
-                  <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Earned</p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Section 2: Finances & Security */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            
-            {/* Quick Navigation Menu */}
-            <div className="glass-panel" style={{ padding: '1.2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                {[
-                  { icon: User, label: 'Account Info', active: true },
-                  { icon: ShieldCheck, label: 'Security' },
-                  { icon: CreditCard, label: 'Payments' },
-                  { icon: Trash2, label: 'History', action: () => navigate('/my-orders') }
-                ].map((item, idx) => (
-                  <button key={idx} onClick={item.action} style={{ 
-                    display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '12px', border: 'none',
-                    background: item.active ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-                    color: item.active ? 'var(--accent-primary)' : 'var(--text-muted)',
-                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: '600', fontSize: '0.85rem'
-                  }} className={!item.active ? "hover:bg-white/5" : ""}>
-                    <item.icon size={18} /> {item.label}
-                  </button>
-                ))}
-            </div>
-
-            {/* Bank & Activity Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-                {/* Bank Details */}
-                <div className="glass-panel" style={{ padding: '2rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Linked Bank Account</h3>
-                        <button onClick={() => setIsEditingBank(!isEditingBank)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.85rem', cursor: 'pointer', fontWeight: '600' }}>
-                          {isEditingBank ? 'Cancel' : bankData.accountNumber ? 'Edit' : 'Link'}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {[
+                            { id: 'profile', icon: User, label: 'Personal Info' },
+                            { id: 'role', icon: profileData.role === 'buyer' ? MapPin : Building, label: profileData.role === 'buyer' ? 'Addresses' : 'Professional Info' },
+                            { id: 'wallet', icon: Wallet, label: 'Finances' },
+                            { id: 'referral', icon: Gift, label: 'Refer & Earn' },
+                            { id: 'support', icon: MessageSquare, label: 'Help & Support' },
+                            { id: 'security', icon: ShieldCheck, label: 'Security' }
+                        ].map(tab => (
+                            <button 
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                style={{ 
+                                    display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)',
+                                    background: activeTab === tab.id ? 'var(--bg-secondary)' : 'transparent',
+                                    color: activeTab === tab.id ? 'var(--text)' : 'var(--text-muted)',
+                                    fontWeight: activeTab === tab.id ? '700' : '400',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                <tab.icon size={18} /> {tab.label}
+                            </button>
+                        ))}
+                        <button onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', color: '#ef4444', fontSize: '0.9rem', marginTop: '1rem' }}>
+                            <Settings size={18} /> Sign Out
                         </button>
                     </div>
-                    {!isEditingBank ? (
-                        bankData.accountNumber ? (
-                          <div style={{ padding: '1.5rem', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid var(--border-light)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Bank Name</p>
-                                <p style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>{bankData.bankName}</p>
-                              </div>
-                              <Building size={24} color="var(--accent-primary)" />
-                            </div>
-                            <div style={{ marginTop: '1.5rem' }}>
-                              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Account Number</p>
-                              <p style={{ fontSize: '1.2rem', fontWeight: '500', letterSpacing: '2px' }}>•••• •••• {bankData.accountNumber.slice(-4)}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px dashed var(--border-light)' }}>
-                            <p style={{ color: 'var(--text-muted)', margin: 0 }}>No bank account linked yet.</p>
-                          </div>
-                        )
-                    ) : (
-                        <form onSubmit={handleSaveBank} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          <input type="text" className="input-field" value={bankData.bankName} onChange={(e) => setBankData({...bankData, bankName: e.target.value})} required placeholder="Bank Name" />
-                          <input type="text" className="input-field" value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} required placeholder="Account Number" />
-                          <input type="text" className="input-field" value={bankData.ifscCode} onChange={(e) => setBankData({...bankData, ifscCode: e.target.value})} required placeholder="IFSC Code" />
-                          <button type="submit" className="btn btn-primary" disabled={loading}>Link Bank Account</button>
-                        </form>
-                    )}
                 </div>
+            </aside>
 
-                {/* Transactions */}
-                <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', margin: 0 }}>Recent Activity</h3>
-                        <button onClick={() => setShowAllTransactions(!showAllTransactions)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer' }}>View All</button>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {displayedTransactions.length > 0 ? displayedTransactions.map(tx => (
-                            <div key={tx._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', borderRadius: '8px' }} className="hover:bg-white/5">
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                    <div style={{ padding: '0.4rem', borderRadius: '8px', background: (tx.type === 'credit' || tx.type === 'deposit') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
-                                        {(tx.type === 'credit' || tx.type === 'deposit') ? <ArrowDownLeft size={16} color="#10b981" /> : <ArrowUpRight size={16} color="#ef4444" />}
+            {/* Content Area */}
+            <section style={{ flex: 1 }}>
+                <div className="glass-panel" style={{ padding: '3.5rem', borderRadius: 'var(--radius-lg)' }}>
+                    {activeTab === 'profile' && (
+                        <div className="animate-fade-in">
+                            <div style={{ marginBottom: '2.5rem' }}>
+                                <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Account Details</h2>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Update your personal identity and contact information.</p>
+                            </div>
+
+                            <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>Display Name</label>
+                                        <input value={profileData.displayName} onChange={e => setProfileData({...profileData, displayName: e.target.value})} placeholder="Your Name" />
                                     </div>
-                                    <div>
-                                        <p style={{ fontSize: '0.85rem', fontWeight: '600', margin: 0 }}>{tx.description}</p>
-                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{new Date(tx.createdAt).toLocaleDateString()}</p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>Phone Number</label>
+                                        <input value={profileData.phone} onChange={e => setProfileData({...profileData, phone: e.target.value})} placeholder="+91 XXXXX XXXXX" />
                                     </div>
                                 </div>
-                                <span style={{ fontWeight: '700', color: (tx.type === 'credit' || tx.type === 'deposit') ? '#10b981' : '#ef4444' }}>
-                                    {(tx.type === 'credit' || tx.type === 'deposit') ? '+' : '-'}₹{tx.amount}
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>Email Address</label>
+                                    <input value={profileData.email} disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} />
+                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Contact support to change your primary email.</p>
+                                </div>
+                                
+                                <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
+                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Mailing Address</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <input value={profileData.address.street} onChange={e => setProfileData({...profileData, address: {...profileData.address, street: e.target.value}})} placeholder="Street Address" />
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                            <input value={profileData.address.city} onChange={e => setProfileData({...profileData, address: {...profileData.address, city: e.target.value}})} placeholder="City" />
+                                            <input value={profileData.address.state} onChange={e => setProfileData({...profileData, address: {...profileData.address, state: e.target.value}})} placeholder="State" />
+                                            <input value={profileData.address.pincode} onChange={e => setProfileData({...profileData, address: {...profileData.address, pincode: e.target.value}})} placeholder="Zip Code" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '2rem' }} disabled={loading}>
+                                    {loading ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    {activeTab === 'role' && (
+                        <div className="animate-fade-in">
+                            {profileData.role === 'buyer' ? (
+                                <div>
+                                    <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Shipping Management</h2>
+                                    <p style={{ color: 'var(--text-muted)' }}>Manage multiple shipping addresses for different gift recipients.</p>
+                                    {/* Buyer specific UI - simplified for now */}
+                                    <div style={{ padding: '3rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', textAlign: 'center', marginTop: '2rem' }}>
+                                        <MapPin size={32} style={{ marginBottom: '1rem', color: 'var(--text-light)' }} />
+                                        <p style={{ color: 'var(--text-muted)' }}>Primary address is synced with your profile.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div style={{ marginBottom: '2.5rem' }}>
+                                        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Professional Profile</h2>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Information visible to customers and used for payouts.</p>
+                                    </div>
+
+                                    <form onSubmit={handleUpdateRoleData} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>
+                                                {profileData.role === 'seller' ? 'Business Name' : 'Studio Name'}
+                                            </label>
+                                            <input 
+                                                value={profileData.role === 'seller' ? roleData.businessName : roleData.studioName} 
+                                                onChange={e => setRoleData({...roleData, [profileData.role === 'seller' ? 'businessName' : 'studioName']: e.target.value})} 
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>Description / Bio</label>
+                                            <textarea rows="4" value={roleData.bio} onChange={e => setRoleData({...roleData, bio: e.target.value})} placeholder="Tell your story..." />
+                                        </div>
+
+                                        <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
+                                            <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Banking & Payouts</h3>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                <input value={roleData.bankDetails.bankName} onChange={e => setRoleData({...roleData, bankDetails: {...roleData.bankDetails, bankName: e.target.value}})} placeholder="Bank Name" />
+                                                <input value={roleData.bankDetails.ifsc} onChange={e => setRoleData({...roleData, bankDetails: {...roleData.bankDetails, ifsc: e.target.value}})} placeholder="IFSC Code" />
+                                                <input style={{ gridColumn: 'span 2' }} value={roleData.bankDetails.accountNumber} onChange={e => setRoleData({...roleData, bankDetails: {...roleData.bankDetails, accountNumber: e.target.value}})} placeholder="Account Number" />
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '2rem' }} disabled={loading}>
+                                            {loading ? 'Saving...' : 'Update Professional Info'}
+                                        </button>
+                                    </form>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'wallet' && (
+                        <div className="animate-fade-in">
+                            <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Finances</h2>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '3rem' }}>Manage your wallet, transactions and earnings.</p>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                                <div className="glass-panel" style={{ background: 'var(--bg-secondary)', padding: '2rem', borderRadius: 'var(--radius-md)' }}>
+                                    <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-light)', marginBottom: '1.5rem' }}>Primary Wallet</h3>
+                                    <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>₹0.00</div>
+                                    <button onClick={() => navigate('/wallet')} className="btn btn-primary" style={{ marginTop: '2rem', width: '100%' }}>Manage Funds</button>
+                                </div>
+                                <div className="glass-panel" style={{ border: '1px solid var(--border)', padding: '2rem', borderRadius: 'var(--radius-md)' }}>
+                                    <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-light)', marginBottom: '1.5rem' }}>Payout Status</h3>
+                                    <p style={{ color: 'var(--text-muted)' }}>No pending payouts.</p>
+                                    <div style={{ marginTop: '3.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text)', fontSize: '0.9rem', fontWeight: '700' }}>
+                                        View History <ArrowRight size={16} />
+                                    </div>
+                                </div>
                             </div>
-                        )) : <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No recent activity</p>}
-                    </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'referral' && (
+                        <div className="animate-fade-in">
+                            <div style={{ marginBottom: '2.5rem' }}>
+                                <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Refer & Earn</h2>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Share your referral link and earn rewards when friends join.</p>
+                            </div>
+
+                            {/* Referral Code Card */}
+                            <div style={{ background: 'var(--gradient-soft)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '2.5rem', marginBottom: '2rem', textAlign: 'center' }}>
+                                <Gift size={36} color="var(--primary)" style={{ marginBottom: '1rem' }} />
+                                <p style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Your Referral Code</p>
+                                <div style={{ fontSize: '2rem', fontWeight: '800', letterSpacing: '0.1em', color: 'var(--primary)', marginBottom: '1.5rem' }}>
+                                    {referralData.code || 'Loading...'}
+                                </div>
+                                <button
+                                    onClick={handleCopyCode}
+                                    className="btn btn-primary"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                                >
+                                    {copiedCode ? <><Check size={16} /> Copied!</> : <><Copy size={16} /> Copy Invite Link</>}
+                                </button>
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+                                {[
+                                    { label: 'Friends Referred', value: referralData.stats.totalReferred || 0, color: 'var(--primary)' },
+                                    { label: 'Pending Rewards', value: `₹${referralData.stats.pendingRewards || 0}`, color: 'var(--secondary)' },
+                                    { label: 'Total Earned', value: `₹${referralData.stats.totalEarned || 0}`, color: 'var(--tertiary)' }
+                                ].map(stat => (
+                                    <div key={stat.label} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '2rem', fontWeight: '800', color: stat.color, marginBottom: '0.5rem' }}>{stat.value}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{stat.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.7' }}>
+                                <strong style={{ color: 'var(--text)' }}>How it works:</strong> Share your link → Friend registers → Friend makes first purchase → You both earn ₹100 in wallet credits automatically.
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'support' && (
+                        <div className="animate-fade-in">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Help & Support</h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Track your support tickets and resolve platform issues.</p>
+                                </div>
+                                {!showGrievanceForm && (
+                                    <button onClick={() => setShowGrievanceForm(true)} className="btn btn-primary" style={{ padding: '0.6rem 1.2rem' }}>New Ticket</button>
+                                )}
+                            </div>
+
+                            {showGrievanceForm ? (
+                                <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '2.5rem' }}>
+                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>Submit New Support Ticket</h3>
+                                    <form onSubmit={handleGrievanceSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>Category</label>
+                                                <select 
+                                                    value={grievanceData.category} 
+                                                    onChange={e => setGrievanceData({...grievanceData, category: e.target.value})}
+                                                    style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--border)', padding: '0.8rem', borderRadius: '8px', color: 'white' }}
+                                                >
+                                                    <option value="product_quality">Product Quality</option>
+                                                    <option value="delivery_issue">Delivery Issue</option>
+                                                    <option value="payment_issue">Payment Issue</option>
+                                                    <option value="platform_issue">Platform Issue</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>Subject</label>
+                                                <input 
+                                                    type="text" required value={grievanceData.subject}
+                                                    onChange={e => setGrievanceData({...grievanceData, subject: e.target.value})}
+                                                    placeholder="Brief summary..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-light)' }}>Detailed Description</label>
+                                            <textarea 
+                                                required value={grievanceData.description}
+                                                onChange={e => setGrievanceData({...grievanceData, description: e.target.value})}
+                                                placeholder="Tell us more..."
+                                                style={{ width: '100%', minHeight: '120px', background: 'var(--bg-primary)', border: '1px solid var(--border)', padding: '0.8rem', borderRadius: '8px', color: 'white' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                            <button type="button" onClick={() => setShowGrievanceForm(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Submit Ticket</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {loadingGrievances ? (
+                                        <div style={{ textAlign: 'center', padding: '3rem' }}>Loading tickets...</div>
+                                    ) : grievances.length > 0 ? (
+                                        grievances.map(g => (
+                                            <div key={g._id} style={{ padding: '1.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)' }}>
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                                                        <span style={{ fontWeight: '700', fontSize: '1rem' }}>{g.subject}</span>
+                                                        <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', background: g.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)', color: g.status === 'open' ? '#10b981' : 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase' }}>{g.status}</span>
+                                                    </div>
+                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Ticket #{g._id.slice(-6).toUpperCase()} • Created on {new Date(g.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                                <ChevronRight size={18} color="var(--text-muted)" />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ textAlign: 'center', padding: '5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed var(--border)' }}>
+                                            <MessageSquare size={48} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+                                            <p style={{ color: 'var(--text-muted)' }}>No support tickets found.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'security' && (
+                        <div className="animate-fade-in">
+                            <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Security</h2>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '3rem' }}>Keep your account safe and manage your access.</p>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+                                    <div>
+                                        <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>Password</h4>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Last changed 3 months ago</p>
+                                    </div>
+                                    <button className="btn btn-secondary">Update</button>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+                                    <div>
+                                        <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>Two-Factor Authentication</h4>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Enhance security with a second step</p>
+                                    </div>
+                                    <button className="btn btn-secondary">Enable</button>
+                                </div>
+                                
+                                <div style={{ marginTop: '4rem', padding: '2rem', border: '1px solid #ef444430', background: '#ef444405', borderRadius: 'var(--radius-md)' }}>
+                                    <h4 style={{ color: '#ef4444', marginBottom: '0.5rem' }}>Danger Zone</h4>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Once you delete your account, there is no going back. Please be certain.</p>
+                                    <button className="btn" style={{ border: '1px solid #ef4444', color: '#ef4444' }}>Delete Account</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </div>
-
-          </div>
-
+            </section>
         </div>
-
-        {/* Danger Zone - Spans Full Width at Bottom */}
-        {profileData.role !== 'admin' && (
-          <div className="glass-panel" style={{ 
-            marginTop: '3rem', padding: '2.5rem', border: '1px solid rgba(239, 68, 68, 0.2)', 
-            background: 'linear-gradient(to right, rgba(239, 68, 68, 0.05), transparent)', borderRadius: '24px' 
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
-              <div style={{ flex: 1, minWidth: '300px' }}>
-                <h3 style={{ color: '#ef4444', fontSize: '1.4rem', margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Trash2 size={24} /> Delete Account
-                </h3>
-                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                  Permanently remove your account and all associated data from GiftKart. 
-                  This includes your <strong>wallet balance</strong>, <strong>order history</strong>, and <strong>listed products</strong>. 
-                  This action cannot be undone.
-                </p>
-              </div>
-              <button 
-                onClick={() => { setShowDeleteModal(true); setDeleteStep('confirm'); setDeleteOtp(''); }}
-                style={{ 
-                  background: '#ef4444', color: 'white', border: 'none', padding: '1rem 2rem', borderRadius: '12px',
-                  fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.6rem'
-                }}
-                onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                <Trash2 size={20} /> Permanently Delete
-              </button>
-            </div>
-          </div>
-        )}
       </main>
-
-
-      {/* Delete Account OTP Modal */}
-      {showDeleteModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(8px)', padding: '1rem'
-        }}>
-          <div className="glass-panel" style={{ 
-            padding: '2.5rem', maxWidth: '480px', width: '100%', textAlign: 'center', position: 'relative',
-            border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '20px'
-          }}>
-            {deleteStep !== 'done' && deleteStep !== 'deleting' && (
-              <button 
-                onClick={() => setShowDeleteModal(false)} 
-                style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%' }}
-              >
-                <X size={20} />
-              </button>
-            )}
-
-            {/* Step 1: Confirmation */}
-            {deleteStep === 'confirm' && (
-              <>
-                <div style={{ 
-                  width: '70px', height: '70px', borderRadius: '50%', margin: '0 auto 1.5rem auto',
-                  background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <Trash2 size={32} color="#ef4444" />
-                </div>
-                <h2 style={{ color: 'white', fontSize: '1.5rem', marginBottom: '0.75rem', fontFamily: 'Outfit' }}>Delete Account?</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '0.5rem' }}>
-                  This will <strong style={{ color: '#ef4444' }}>permanently delete</strong> your account and all associated data:
-                </p>
-                <ul style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.8', paddingLeft: '1.5rem', marginBottom: '1.5rem' }}>
-                  <li>Profile & personal information</li>
-                  <li>Wallet balance & transaction history</li>
-                  <li>All products and listings</li>
-                  <li>Order history & queue</li>
-                </ul>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '2rem' }}>
-                  A verification OTP will be sent to <strong style={{ color: 'white' }}>{profileData.email}</strong>
-                </p>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button 
-                    onClick={() => setShowDeleteModal(false)} 
-                    className="btn btn-secondary" 
-                    style={{ flex: 1, padding: '0.8rem' }}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleRequestDelete} 
-                    disabled={deleteSending}
-                    style={{ 
-                      flex: 1, padding: '0.8rem', background: '#ef4444', border: 'none', color: 'white', 
-                      borderRadius: '12px', fontWeight: '700', cursor: deleteSending ? 'wait' : 'pointer',
-                      opacity: deleteSending ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                    }}
-                  >
-                    {deleteSending ? <><Loader className="animate-spin" size={16} /> Sending OTP...</> : <><Mail size={16} /> Send OTP</>}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 2: Enter OTP */}
-            {deleteStep === 'otp' && (
-              <>
-                <div style={{ 
-                  width: '70px', height: '70px', borderRadius: '50%', margin: '0 auto 1.5rem auto',
-                  background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <Mail size={32} color="#ef4444" />
-                </div>
-                <h2 style={{ color: 'white', fontSize: '1.5rem', marginBottom: '0.5rem', fontFamily: 'Outfit' }}>Enter Verification OTP</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '2rem' }}>
-                  We sent a 6-digit code to <strong style={{ color: 'white' }}>{profileData.email}</strong>. Enter it below to confirm deletion.
-                </p>
-
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={deleteOtp}
-                  onChange={(e) => setDeleteOtp(e.target.value.replace(/\D/g, ''))}
-                  placeholder="• • • • • •"
-                  style={{
-                    width: '100%', padding: '1.2rem', fontSize: '2rem', textAlign: 'center', letterSpacing: '12px',
-                    background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(239, 68, 68, 0.3)', borderRadius: '14px',
-                    color: 'white', fontWeight: '800', outline: 'none', marginBottom: '1.5rem', fontFamily: 'monospace'
-                  }}
-                  autoFocus
-                />
-
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '1.5rem' }}>
-                  OTP valid for 10 minutes. <button onClick={handleRequestDelete} disabled={deleteSending} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: '600', fontSize: '0.75rem' }}>{deleteSending ? 'Sending...' : 'Resend OTP'}</button>
-                </p>
-
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button 
-                    onClick={() => { setDeleteStep('confirm'); setDeleteOtp(''); }} 
-                    className="btn btn-secondary" 
-                    style={{ flex: 1, padding: '0.8rem' }}
-                  >
-                    Back
-                  </button>
-                  <button 
-                    onClick={handleConfirmDelete} 
-                    disabled={deleteConfirming || deleteOtp.length !== 6}
-                    style={{ 
-                      flex: 1, padding: '0.8rem', background: deleteOtp.length === 6 ? '#ef4444' : '#555', 
-                      border: 'none', color: 'white', borderRadius: '12px', fontWeight: '700', 
-                      cursor: deleteOtp.length === 6 ? 'pointer' : 'not-allowed',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                    }}
-                  >
-                    {deleteConfirming ? <Loader className="animate-spin" size={16} /> : <Trash2 size={16} />} Delete Forever
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 3: Deleting... */}
-            {deleteStep === 'deleting' && (
-              <>
-                <div style={{ padding: '3rem 0' }}>
-                  <Loader className="animate-spin" size={48} color="#ef4444" style={{ margin: '0 auto 1.5rem auto', display: 'block' }} />
-                  <h2 style={{ color: 'white', fontSize: '1.3rem', marginBottom: '0.5rem' }}>Deleting your account...</h2>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Please wait while we remove all your data.</p>
-                </div>
-              </>
-            )}
-
-            {/* Step 4: Done */}
-            {deleteStep === 'done' && (
-              <>
-                <div style={{ padding: '3rem 0' }}>
-                  <div style={{ 
-                    width: '70px', height: '70px', borderRadius: '50%', margin: '0 auto 1.5rem auto',
-                    background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                    <ShieldCheck size={32} color="#10b981" />
-                  </div>
-                  <h2 style={{ color: 'white', fontSize: '1.3rem', marginBottom: '0.5rem' }}>Account Deleted</h2>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Your account has been permanently removed. Redirecting to homepage...</p>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Add custom CSS for this page responsiveness */}
-      <style>{`
-        @media (max-width: 992px) {
-            .mobile-stack {
-                grid-template-columns: 1fr !important;
-            }
-        }
-        .hover\\:bg-white\\/5:hover { background: rgba(255, 255, 255, 0.05); }
-        .hover\\:bg-white\\/2:hover { background: rgba(255, 255, 255, 0.02); }
-      `}</style>
     </div>
   );
 };

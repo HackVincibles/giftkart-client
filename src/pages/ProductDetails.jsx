@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { Heart, ShoppingCart, Star, Clock, Shield, Sparkles, Plus, Minus, Loader, Gift, Box, Image as ImageIcon } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Clock, Shield, Sparkles, Plus, Minus, Loader, Box, Image as ImageIcon, XCircle, Calendar } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
 import Product3DPreview from '../components/Product3DPreview';
@@ -13,48 +13,34 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
-  const [viewMode, setViewMode] = useState('image'); // 'image' or '3d'
+  const [viewMode, setViewMode] = useState('image');
   const [customData, setCustomData] = useState({});
   const { success, error, info } = useToast();
-  const [aiSuggestion, setAiSuggestion] = useState('');
-  const [suggesting, setSuggesting] = useState(false);
-  
-  const [activeScheduleId] = useState(localStorage.getItem('activeScheduleId'));
-  const [activeScheduleRecipient] = useState(localStorage.getItem('activeScheduleRecipient'));
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [aiFormData, setAiFormData] = useState({
+    recipientName: '',
+    relationship: '',
+    occasion: '',
+    tone: 'heartfelt',
+    interests: '',
+    messageType: 'message'
+  });
 
-  const handleAddToSchedule = async () => {
-    try {
-      setLoading(true);
-      await axios.post(`/auto-gift-calendar/${activeScheduleId}/select-gifts`, {
-        selectedGifts: [{ product: product._id, quantity: quantity }]
-      });
-      success(`Added to ${activeScheduleRecipient}'s gift plan!`);
-      localStorage.removeItem('activeScheduleId');
-      localStorage.removeItem('activeScheduleRecipient');
-      navigate('/auto-gifting');
-    } catch (err) {
-      error("Failed to add to schedule.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const activeScheduleId = localStorage.getItem('activeScheduleId');
+  const activeScheduleRecipient = localStorage.getItem('activeScheduleRecipient');
+
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        if (id === '1' || id === '2') {
-           setProduct(null);
-        } else {
-          const res = await axios.get(`/products/${id}`);
-          if (res.data.success) {
-            setProduct(res.data.data);
-          }
-        }
+        const res = await axios.get(`/products/${id}`);
+        if (res.data.success) setProduct(res.data.data);
       } catch (err) {
-        console.error("Error fetching product:", err);
-        error("Product not found or database error.");
+        error("Product not found.");
       } finally {
         setLoading(false);
       }
@@ -67,12 +53,9 @@ const ProductDetails = () => {
       try {
         const res = await axios.get('/wishlist');
         if (res.data.success) {
-          const exists = res.data.data.products.some(p => p.product?._id === id);
-          setIsInWishlist(exists);
+          setIsInWishlist(res.data.data.products.some(p => p.product?._id === id));
         }
-      } catch (err) {
-        console.error("Wishlist check error:", err);
-      }
+      } catch {}
     };
     if (product) checkWishlist();
   }, [id, product]);
@@ -88,203 +71,122 @@ const ProductDetails = () => {
         setIsInWishlist(true);
         success("Added to favorites!");
       }
-    } catch (err) {
-      error("Failed to update favorites");
-    }
+    } catch { error("Failed to update favorites"); }
   };
 
   const handleAddToCart = async () => {
-    if (!product) return error("Cannot add a non-existent product to cart.");
     try {
-      setLoading(true);
-      await axios.post('/cart/add', {
-        productId: product._id,
-        quantity: quantity,
-        customizationId: null,
-        selectedVariants: customData
+      await axios.post('/cart/add', { productId: product._id, quantity, selectedVariants: customData });
+      success("Added to bag");
+    } catch { error("Failed to add to bag"); }
+  };
+
+  const handleScheduleGift = async () => {
+    try {
+      await axios.post(`/auto-gift-calendar/${activeScheduleId}/select-gifts`, {
+        selectedGifts: [{
+           product: product._id,
+           quantity
+        }]
       });
-      success("Added to cart successfully!");
+      success(`Gift scheduled for ${activeScheduleRecipient || 'your event'}!`);
+      localStorage.removeItem('activeScheduleId');
+      localStorage.removeItem('activeScheduleRecipient');
+      navigate('/auto-gifting');
     } catch (err) {
-      error(err.response?.data?.message || "Failed to add to cart.");
-    } finally {
-      setLoading(false);
+      error("Failed to schedule gift");
     }
   };
 
-  const getAiSuggestion = async () => {
+  const handleAiGenerate = async () => {
     try {
       setSuggesting(true);
-      const res = await axios.post('/ai/personalization-suggestion', {
-        productName: product.name,
-        description: product.description,
-        category: product.category
-      });
+      const res = await axios.post('/custom-gifts/ai-message', aiFormData);
       if (res.data.success) {
-        setAiSuggestion(res.data.suggestion);
-        info("AI has a creative idea for you!");
+        setAiResult(res.data.data);
+        success("AI has crafted your message!");
       }
-    } catch (err) {
-      error("AI is shy right now. Try again later.");
-    } finally {
-      setSuggesting(false);
-    }
-  };
-
-  const handleOrderNow = async () => {
-    if (!product) return error("Cannot order a non-existent product.");
-    try {
-      setLoading(true);
-      await axios.post('/cart/add', {
-        productId: product._id,
-        quantity: quantity,
-        customizationId: null,
-        selectedVariants: customData
-      });
-      navigate('/cart');
-    } catch (err) {
-      error(err.response?.data?.message || "Failed to initiate order.");
-    } finally {
-      setLoading(false);
+    } catch { 
+      error("AI is busy right now."); 
+    } finally { 
+      setSuggesting(false); 
     }
   };
 
   if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="kl-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
       <Navbar />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader className="animate-spin" color="var(--accent-primary)" size={48} />
-      </div>
+      <Loader className="animate-spin" size={32} color="var(--text-light)" />
     </div>
   );
 
   if (!product) return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="kl-root" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
       <Navbar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Product Not Found</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>This product doesn't exist in our real database yet. Creators need to add products via the dashboard.</p>
-        <button onClick={() => navigate('/buyer-dashboard')} className="btn btn-primary">Browse Gifts</button>
-      </div>
+      <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Object not found.</h2>
+      <button onClick={() => navigate('/buyer-dashboard')} className="btn btn-primary">Browse Collection</button>
     </div>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="kl-root">
       <Navbar />
       
-      <main className="container animate-fade-in" style={{ padding: '2rem 1rem', flex: 1 }}>
-        <div className="product-details-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+      <main className="container" style={{ paddingTop: '8rem', paddingBottom: '8rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '5rem', alignItems: 'start' }}>
           
-          {/* Left: Images & 3D */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div className="glass-panel" style={{ padding: '0.4rem', borderRadius: '24px', overflow: 'hidden', position: 'relative', height: '100%', aspectRatio: '1/1' }}>
-              
-              {/* Toggle View Mode */}
-              <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 10, display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  onClick={() => setViewMode('image')}
-                  style={{ 
-                    padding: '0.6rem', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                    background: viewMode === 'image' ? 'var(--accent-primary)' : 'rgba(0,0,0,0.5)',
-                    color: 'white', backdropFilter: 'blur(10px)', transition: 'all 0.3s'
-                  }}
-                  title="View Images"
-                >
-                  <ImageIcon size={20} />
-                </button>
-                <button 
-                  onClick={() => setViewMode('3d')}
-                  style={{ 
-                    padding: '0.6rem', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                    background: viewMode === '3d' ? 'var(--accent-primary)' : 'rgba(0,0,0,0.5)',
-                    color: 'white', backdropFilter: 'blur(10px)', transition: 'all 0.3s'
-                  }}
-                  title="View 3D Model"
-                >
-                  <Box size={20} />
-                </button>
+          {/* Visuals */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="glass-panel" style={{ aspectRatio: '1/1', borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 10, display: 'flex', gap: '0.8rem' }}>
+                <button onClick={() => setViewMode('image')} className={`kl-nav-icon-btn ${viewMode === 'image' ? 'active' : ''}`} style={{ background: viewMode === 'image' ? 'var(--accent)' : 'var(--glass)', color: viewMode === 'image' ? 'var(--white)' : 'var(--text)', borderRadius: '12px' }}><ImageIcon size={18} /></button>
+                <button onClick={() => setViewMode('3d')} className={`kl-nav-icon-btn ${viewMode === '3d' ? 'active' : ''}`} style={{ background: viewMode === '3d' ? 'var(--accent)' : 'var(--glass)', color: viewMode === '3d' ? 'var(--white)' : 'var(--text)', borderRadius: '12px' }}><Box size={18} /></button>
               </div>
 
               {viewMode === 'image' ? (
-                <img 
-                  src={product.images?.[activeImage]?.url || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&q=80&w=800'} 
-                  alt={product.name} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }}
-                />
+                <img src={product.images?.[activeImage]?.url || 'https://via.placeholder.com/800'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <Product3DPreview product={product} />
               )}
             </div>
             
-            {viewMode === 'image' && (
-              <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                {product.images?.map((img, idx) => (
-                  <button 
-                    key={idx}
-                    onClick={() => setActiveImage(idx)}
-                    className="glass-panel"
-                    style={{ 
-                      flex: '0 0 70px', height: '70px', padding: '3px', 
-                      border: activeImage === idx ? '2px solid var(--accent-primary)' : '1px solid var(--border-light)',
-                      transition: 'all 0.2s', borderRadius: '12px'
-                    }}
-                  >
-                    <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                  </button>
-                ))}
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
+              {product.images?.map((img, idx) => (
+                <button key={idx} onClick={() => setActiveImage(idx)} style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: activeImage === idx ? '2px solid var(--accent)' : '1px solid var(--border)', flexShrink: 0 }}>
+                  <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Right: Details */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Info */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-secondary)', marginBottom: '0.75rem' }}>
-                <Sparkles size={14} />
-                <span style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>{product.category?.replace('-', ' ')}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-light)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.5rem' }}>
+                <Sparkles size={14} /> {product.category}
               </div>
+              <h1 style={{ fontSize: '3.5rem', marginBottom: '1.5rem', lineHeight: '1.1' }}>{product.name}</h1>
               
-              <h1 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.5rem)', marginBottom: '0.75rem', lineHeight: '1.2', fontWeight: '900' }}>{product.name}</h1>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} fill={i < Math.floor(product.averageRating || 4.5) ? "var(--warning)" : "none"} color="var(--warning)" />
-                  ))}
-                  <span style={{ marginLeft: '0.4rem', fontWeight: '700', fontSize: '0.9rem' }}>{product.averageRating || 4.5}</span>
-                </div>
-                <div style={{ width: '1px', height: '14px', background: 'var(--border-light)' }} className="mobile-hide"></div>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{product.popularity?.orders || 120} Happy Customers</span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--text-primary)' }}>₹{product.basePrice.toLocaleString()}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', marginBottom: '2.5rem' }}>
+                <span style={{ fontSize: '2rem', fontWeight: '400' }}>₹{product.basePrice.toLocaleString()}</span>
                 {product.pricing?.mrp > product.basePrice && (
-                  <span style={{ fontSize: '1.1rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>₹{product.pricing.mrp.toLocaleString()}</span>
+                  <span style={{ color: 'var(--text-light)', textDecoration: 'line-through' }}>₹{product.pricing.mrp.toLocaleString()}</span>
                 )}
               </div>
 
-              <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '1.5rem' }}>
-                {product.description || "A beautifully crafted gift designed to create lasting memories. Hand-made by expert artisans with premium materials."}
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', fontSize: '1.1rem', marginBottom: '2.5rem' }}>
+                {product.description}
               </p>
 
-              {/* Customization Fields */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Customization */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
                 {product.customizationOptions?.map(opt => (
-                  <div key={opt.fieldName} className="input-group" style={{ marginBottom: 0 }}>
-                    <label className="input-label" style={{ fontWeight: '700', fontSize: '0.85rem' }}>{opt.label}</label>
+                  <div key={opt.fieldName}>
+                    <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.6rem', display: 'block', color: 'var(--text-light)' }}>{opt.label}</label>
                     {opt.type === 'text' ? (
-                      <input 
-                        type="text" 
-                        className="input-field" 
-                        placeholder={opt.placeholder}
-                        onChange={(e) => setCustomData({...customData, [opt.fieldName]: e.target.value})}
-                      />
+                      <input type="text" placeholder={opt.placeholder} onChange={(e) => setCustomData({...customData, [opt.fieldName]: e.target.value})} />
                     ) : (
-                      <select 
-                        className="input-field"
-                        onChange={(e) => setCustomData({...customData, [opt.fieldName]: e.target.value})}
-                      >
+                      <select onChange={(e) => setCustomData({...customData, [opt.fieldName]: e.target.value})}>
                         <option value="">Select Option</option>
                         {opt.options?.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
@@ -293,106 +195,131 @@ const ProductDetails = () => {
                 ))}
               </div>
 
-              {/* AI Suggestion Area */}
-              <div style={{ marginTop: '1.5rem' }}>
-                <button 
-                  onClick={getAiSuggestion}
-                  disabled={suggesting}
-                  style={{ 
-                    background: 'none', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)',
-                    padding: '0.6rem 1rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '800',
-                    display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer',
-                    transition: 'all 0.3s'
-                  }}
-                  className="hover-glow"
-                >
-                  <Sparkles size={16} className={suggesting ? 'animate-spin' : ''} />
-                  {suggesting ? 'Generating Idea...' : 'AI Design Suggestion'}
-                </button>
-                
-                {aiSuggestion && (
-                  <div className="glass-panel animate-fade-in" style={{ marginTop: '1rem', padding: '1rem', borderLeft: '4px solid var(--accent-primary)', background: 'rgba(139, 92, 246, 0.05)' }}>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0, fontStyle: 'italic' }}>
-                      "{aiSuggestion}"
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '0.4rem', border: '1px solid var(--border-light)' }}>
-                  <button 
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    style={{ padding: '0.4rem', color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    <Minus size={18} />
-                  </button>
-                  <span style={{ width: '36px', textAlign: 'center', fontSize: '1.1rem', fontWeight: '800' }}>{quantity}</span>
-                  <button 
-                    onClick={() => setQuantity(q => q + 1)}
-                    style={{ padding: '0.4rem', color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    <Plus size={18} />
-                  </button>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', padding: '0.4rem 1rem' }}>
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ padding: '0.5rem' }}><Minus size={16} /></button>
+                  <span style={{ width: '40px', textAlign: 'center', fontWeight: '700' }}>{quantity}</span>
+                  <button onClick={() => setQuantity(q => q + 1)} style={{ padding: '0.5rem' }}><Plus size={16} /></button>
                 </div>
                 
-                <span style={{ color: 'var(--danger)', fontSize: '0.8rem', fontWeight: '700' }}>
-                  Low stock: {product.inventory?.stockCount || 5} left
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 {activeScheduleId ? (
-                  <button 
-                    onClick={handleAddToSchedule}
-                    className="btn btn-primary mobile-full-width" 
-                    style={{ flex: 1, padding: '1rem', fontSize: '1rem', background: 'var(--accent-secondary)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: '800' }}
-                  >
-                    <Gift size={20} /> Add to Plan
+                  <button onClick={handleScheduleGift} className="btn btn-primary" style={{ flex: 1, background: 'var(--accent-primary)', border: 'none' }}>
+                    <Calendar size={18} style={{ marginRight: '0.5rem', display: 'inline' }} />
+                    Schedule for {activeScheduleRecipient || 'Event'}
                   </button>
                 ) : (
-                  <button 
-                    onClick={handleOrderNow}
-                    className="btn btn-primary mobile-full-width" 
-                    style={{ flex: 1, padding: '1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: '800' }}
-                  >
-                    Buy Now
-                  </button>
+                  <button onClick={handleAddToCart} className="btn btn-primary" style={{ flex: 1 }}>Add to Bag</button>
                 )}
-                <button 
-                  onClick={handleAddToCart}
-                  className="btn btn-secondary mobile-full-width" 
-                  style={{ flex: 1, padding: '1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: '800' }}
-                >
-                  <ShoppingCart size={20} /> Cart
-                </button>
-                <button 
-                  onClick={handleToggleWishlist}
-                  className="btn btn-secondary" 
-                  style={{ padding: '1rem', color: isInWishlist ? '#ef4444' : 'inherit', borderRadius: '16px' }}
-                >
-                  <Heart size={20} fill={isInWishlist ? '#ef4444' : 'transparent'} />
-                </button>
+                
+                <button onClick={handleToggleWishlist} className="btn btn-secondary" style={{ padding: '0 1.5rem', color: isInWishlist ? '#ef4444' : 'inherit' }}><Heart size={18} fill={isInWishlist ? '#ef4444' : 'none'} /></button>
               </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
-              <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem', borderRadius: '16px' }}>
-                <Clock size={16} color="var(--accent-secondary)" />
-                <span style={{ fontSize: '0.75rem', fontWeight: '600' }}>Fast Shipping</span>
-              </div>
-              <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem', borderRadius: '16px' }}>
-                <Shield size={16} color="var(--success)" />
-                <span style={{ fontSize: '0.75rem', fontWeight: '600' }}>Secure Pay</span>
+              {/* AI Trigger */}
+              <div className="glass-panel" style={{ padding: '2rem', borderRadius: 'var(--radius-lg)', textAlign: 'center', border: '1px solid var(--accent-primary)30', background: 'var(--gradient-soft)' }}>
+                <Sparkles size={24} style={{ marginBottom: '1rem', color: 'var(--accent-primary)' }} />
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.6rem' }}>AI Personalization Center</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Generate unique poems, messages or captions for your gift using our advanced AI.</p>
+                <button onClick={() => setShowAiModal(true)} className="btn btn-primary" style={{ width: '100%', background: 'var(--gradient-primary)' }}>Open AI Suite</button>
               </div>
             </div>
           </div>
-
         </div>
       </main>
+      {showAiModal && (
+        <AiPersonalizationModal 
+          formData={aiFormData}
+          setFormData={setAiFormData}
+          onSubmit={handleAiGenerate}
+          result={aiResult}
+          setAiResult={setAiResult}
+          loading={suggesting}
+          onClose={() => { setShowAiModal(false); setAiResult(null); }}
+        />
+      )}
+      
+      <style>{`
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+};
 
+const AiPersonalizationModal = ({ formData, setFormData, onSubmit, result, setAiResult, loading, onClose }) => {
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(15px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+      <div className="glass-panel animate-slide-up" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', border: '1px solid var(--accent-primary)30', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Sparkles color="var(--accent-primary)" /> AI Personalization</h2>
+          <button onClick={onClose} className="kl-nav-icon-btn"><XCircle size={24} /></button>
+        </div>
+
+        {!result ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Recipient Name</label>
+                <input name="recipientName" value={formData.recipientName} onChange={handleChange} placeholder="e.g. Sarah" style={{ width: '100%' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Relationship</label>
+                <input name="relationship" value={formData.relationship} onChange={handleChange} placeholder="e.g. Sister, Friend" style={{ width: '100%' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Occasion</label>
+                <input name="occasion" value={formData.occasion} onChange={handleChange} placeholder="e.g. Birthday, Farewell" style={{ width: '100%' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Tone</label>
+                <select name="tone" value={formData.tone} onChange={handleChange} style={{ width: '100%' }}>
+                  <option value="heartfelt">Heartfelt</option>
+                  <option value="funny">Funny</option>
+                  <option value="professional">Professional</option>
+                  <option value="poetic">Poetic</option>
+                  <option value="minimalist">Minimalist</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Content Type</label>
+              <select name="messageType" value={formData.messageType} onChange={handleChange} style={{ width: '100%' }}>
+                <option value="message">Personal Message</option>
+                <option value="poem">Short Poem</option>
+                <option value="caption">Social Media Caption</option>
+                <option value="story">Mini Memory Story</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Interests / Traits (Optional)</label>
+              <textarea name="interests" value={formData.interests} onChange={handleChange} placeholder="e.g. Loves gardening, coffee enthusiast..." style={{ width: '100%', minHeight: '80px' }} />
+            </div>
+
+            <button onClick={onSubmit} disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+              {loading ? <Loader className="animate-spin" size={18} /> : 'Craft with AI'}
+            </button>
+          </div>
+        ) : (
+          <div className="animate-fade-in" style={{ textAlign: 'center' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-light)', marginBottom: '2rem', whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '1.1rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+              {result}
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={() => setAiResult(null)} className="btn btn-secondary" style={{ flex: 1 }}>Back to Edit</button>
+              <button onClick={() => {
+                navigator.clipboard.writeText(result);
+                alert("Copied to clipboard!");
+              }} className="btn btn-primary" style={{ flex: 1 }}>Copy Message</button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

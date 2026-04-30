@@ -89,7 +89,7 @@ const Wishlist = () => {
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Navbar />
       
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '10rem 2rem 8rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '3rem' }}>
             <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '12px' }}>
                 <Heart size={32} color="#ef4444" fill="#ef4444" />

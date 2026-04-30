@@ -33,6 +33,7 @@ const AutoGifting = () => {
     deliveryState: '',
     deliveryPincode: '',
     isAutonomous: false,
+    approvalRequired: true,
     maxBudget: 2000
   });
 
@@ -102,6 +103,7 @@ const AutoGifting = () => {
           pincode: formData.deliveryPincode
         },
         isAutonomous: formData.isAutonomous,
+        approvalRequired: formData.approvalRequired,
         autoSelectionCriteria: {
           maxBudget: formData.maxBudget || 2000
         }
@@ -130,7 +132,8 @@ const AutoGifting = () => {
         deliveryAddress: '',
         deliveryCity: '',
         deliveryState: '',
-        deliveryPincode: ''
+        deliveryPincode: '',
+        approvalRequired: true
       });
     } catch (err) {
       error(err.response?.data?.message || "Failed to process auto-gift.");
@@ -234,9 +237,15 @@ const AutoGifting = () => {
                       </label>
                     </div>
                     {formData.isAutonomous && (
-                      <div style={{ paddingLeft: '1.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        AI will automatically select and order the best gift within your budget.
-                      </div>
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.75rem' }}>
+                          <input type="checkbox" id="approvalRequired" checked={formData.approvalRequired} onChange={e => setFormData({...formData, approvalRequired: e.target.checked})} style={{ width: '16px', height: '16px', accentColor: 'var(--accent-secondary)' }} />
+                          <label htmlFor="approvalRequired" style={{ cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Require my approval before ordering</label>
+                        </div>
+                        <div style={{ paddingLeft: '1.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {formData.approvalRequired ? 'AI will select the gift, but you must approve it.' : 'AI will automatically order and pay from your wallet.'}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -389,7 +398,9 @@ const AutoGifting = () => {
                                 deliveryAddress: evt.deliveryAddress?.address,
                                 deliveryCity: evt.deliveryAddress?.city,
                                 deliveryState: evt.deliveryAddress?.state,
-                                deliveryPincode: evt.deliveryAddress?.pincode
+                                deliveryPincode: evt.deliveryAddress?.pincode,
+                                isAutonomous: evt.isAutonomous,
+                                approvalRequired: evt.approvalRequired
                             });
                             setShowAddForm(true);
                         }}
@@ -505,6 +516,14 @@ const AutoGifting = () => {
                       ) : (
                         <button 
                             onClick={() => {
+                                localStorage.setItem('activeSchedule', JSON.stringify({
+                                    id: evt._id,
+                                    recipient: evt.recipient?.name,
+                                    address: evt.deliveryAddress,
+                                    occasion: evt.occasion,
+                                    date: evt.occasionDate,
+                                    isScheduledGift: true
+                                }));
                                 localStorage.setItem('activeScheduleId', evt._id);
                                 localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
                                 navigate('/buyer-dashboard');
@@ -519,6 +538,13 @@ const AutoGifting = () => {
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button 
                           onClick={() => {
+                            localStorage.setItem('activeSchedule', JSON.stringify({
+                                id: evt._id,
+                                recipient: evt.recipient?.name,
+                                address: evt.deliveryAddress,
+                                occasion: evt.occasion,
+                                isScheduledGift: true
+                            }));
                             localStorage.setItem('activeScheduleId', evt._id);
                             localStorage.setItem('activeScheduleRecipient', evt.recipient?.name);
                             navigate('/buyer-dashboard');

@@ -50,73 +50,141 @@ const GlobalChatDrawer = ({ onClose }) => {
     };
 
     return (
-        <div className="glass-panel animate-slide-in" style={{
-            position: 'fixed', bottom: '20px', right: '20px', width: '380px', height: '600px',
-            maxHeight: '80vh', zIndex: 2000, display: 'flex', flexDirection: 'column',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)', border: '1px solid var(--accent-primary)30',
-            overflow: 'hidden', borderRadius: '24px'
+        <div className="glass-panel animate-fade-in" style={{
+            position: 'fixed', 
+            bottom: '2rem', 
+            right: '2rem', 
+            width: '420px', 
+            height: '650px',
+            maxHeight: '85vh', 
+            zIndex: 3000, 
+            display: 'flex', 
+            flexDirection: 'column',
+            boxShadow: 'var(--shadow-2xl)', 
+            border: '1px solid var(--border)',
+            overflow: 'hidden', 
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--bg)'
         }}>
             {/* Header */}
-            <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ 
+                padding: '1.5rem', 
+                borderBottom: '1px solid var(--border)', 
+                background: 'var(--bg-secondary)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between' 
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {view === 'chat' && (
-                        <button onClick={() => setView('inbox')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
-                            <ArrowLeft size={20} />
+                        <button onClick={() => setView('inbox')} className="hover-scale" style={{ background: 'none', border: 'none', color: 'var(--text-light)', cursor: 'pointer', padding: '4px' }}>
+                            <ArrowLeft size={22} />
                         </button>
                     )}
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit' }}>
-                        {view === 'inbox' ? 'Messages' : activeChat?.recipientName}
-                    </h3>
+                    <div>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '900', letterSpacing: '-0.02em' }}>
+                            {view === 'inbox' ? 'Chats' : activeChat?.recipientName}
+                        </h3>
+                        {view === 'inbox' && <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--accent)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Chats</p>}
+                    </div>
                 </div>
-                <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                    <X size={22} />
+                <button onClick={onClose} className="hover-scale" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                    <X size={24} />
                 </button>
             </div>
 
-            {/* Content */}
-            <div style={{ flex: 1, overflowY: 'auto', background: 'rgba(0,0,0,0.2)' }}>
+            {/* Content Area */}
+            <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }} className="custom-scrollbar">
                 {view === 'inbox' ? (
                     loading ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-                            <Loader className="animate-spin" color="var(--accent-primary)" />
+                        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                            <Loader className="animate-spin" color="var(--accent)" size={32} />
                         </div>
                     ) : conversations.length > 0 ? (
-                        conversations.map((conv, idx) => (
-                            <div 
-                                key={idx} 
-                                onClick={() => handleSelectChat(conv)}
-                                style={{ 
-                                    padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', 
-                                    cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.03)',
-                                    transition: 'all 0.2s', background: conv.unread ? 'rgba(139, 92, 246, 0.05)' : 'transparent'
-                                }}
-                                className="hover-glow"
-                            >
-                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--accent-primary)20', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border-light)' }}>
-                                    {conv.otherUser.avatar ? (
-                                        <img src={conv.otherUser.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <User size={24} color="var(--accent-primary)" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary)' }}>{conv.otherUser.name}</p>
-                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {conversations.map((conv, idx) => (
+                                <div 
+                                    key={idx} 
+                                    onClick={() => handleSelectChat(conv)}
+                                    style={{ 
+                                        padding: '1.25rem 1.5rem', 
+                                        display: 'flex', 
+                                        gap: '1.25rem', 
+                                        alignItems: 'center', 
+                                        cursor: 'pointer', 
+                                        borderBottom: '1px solid var(--border)',
+                                        transition: 'all 0.3s', 
+                                        background: conv.unread ? 'var(--accent)05' : 'transparent'
+                                    }}
+                                    className="hover-bg"
+                                >
+                                    <div style={{ 
+                                        width: '54px', 
+                                        height: '54px', 
+                                        borderRadius: 'var(--radius-full)', 
+                                        background: 'var(--bg-secondary)', 
+                                        overflow: 'hidden', 
+                                        flexShrink: 0, 
+                                        border: `2px solid ${conv.unread ? 'var(--accent)' : 'var(--border)'}`,
+                                        transition: 'all 0.3s'
+                                    }}>
+                                        {conv.otherUser?.avatar ? (
+                                            <img src={conv.otherUser.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <User size={24} color="var(--text-light)" />
+                                            </div>
+                                        )}
                                     </div>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {conv.lastMessage}
-                                    </p>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+                                            <p style={{ margin: 0, fontWeight: '800', fontSize: '1rem', color: 'var(--text)' }}>{conv.otherUser?.name || 'Artisan'}</p>
+                                            <span style={{ fontSize: '0.7rem', color: conv.unread ? 'var(--accent)' : 'var(--text-muted)', fontWeight: '700' }}>
+                                                {new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <p style={{ 
+                                                margin: 0, 
+                                                fontSize: '0.85rem', 
+                                                color: conv.unread ? 'var(--text)' : 'var(--text-muted)', 
+                                                fontWeight: conv.unread ? '700' : '400',
+                                                whiteSpace: 'nowrap', 
+                                                overflow: 'hidden', 
+                                                textOverflow: 'ellipsis' 
+                                            }}>
+                                                {conv.lastMessage}
+                                            </p>
+                                            {conv.unread && (
+                                                <div style={{ 
+                                                    minWidth: '18px', 
+                                                    height: '18px', 
+                                                    borderRadius: '9px', 
+                                                    background: 'var(--accent)', 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'center',
+                                                    fontSize: '0.6rem',
+                                                    color: 'var(--bg)',
+                                                    fontWeight: '900',
+                                                    marginLeft: '0.5rem',
+                                                    padding: '0 4px'
+                                                }}>
+                                                    NEW
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                {conv.unread && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-primary)' }} />}
-                            </div>
-                        ))
+                            ))}
+                        </div>
                     ) : (
-                        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
-                            <MessageSquare size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-                            <p>No conversations yet. Order a gift to start chatting with an artisan!</p>
+                        <div style={{ textAlign: 'center', padding: '6rem 3rem', color: 'var(--text-muted)' }}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                                <MessageSquare size={36} color="var(--text-light)" />
+                            </div>
+                            <h4 style={{ color: 'var(--text)', marginBottom: '0.5rem', fontWeight: '800' }}>No Active Chats</h4>
+                            <p style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>Start a conversation with our talented creators by placing an order or inquiry!</p>
                         </div>
                     )
                 ) : (

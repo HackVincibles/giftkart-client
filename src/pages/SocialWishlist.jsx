@@ -22,7 +22,7 @@ const SocialWishlist = () => {
     const fetchSocialWishlist = async () => {
         try {
             setLoading(true);
-            const res = await axios.get('http://localhost:5000/api/products/social/wishlist');
+            const res = await axios.get('/products/social/wishlist');
             if (res.data.success) {
                 setProducts(res.data.data);
             }
@@ -35,9 +35,7 @@ const SocialWishlist = () => {
 
     const fetchUserWishlist = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/wishlist', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await axios.get('/wishlist');
             if (res.data.success) {
                 setWishlistIds(new Set(res.data.data.products.map(p => p._id)));
             }
@@ -52,16 +50,12 @@ const SocialWishlist = () => {
         try {
             const isWishlisted = wishlistIds.has(productId);
             if (isWishlisted) {
-                await axios.delete(`http://localhost:5000/api/wishlist/${productId}`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await axios.delete(`/wishlist/${productId}`);
                 const newIds = new Set(wishlistIds);
                 newIds.delete(productId);
                 setWishlistIds(newIds);
             } else {
-                await axios.post('http://localhost:5000/api/wishlist', { productId }, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await axios.post('/wishlist', { productId });
                 setWishlistIds(new Set([...wishlistIds, productId]));
             }
         } catch (err) {
@@ -94,7 +88,7 @@ const SocialWishlist = () => {
                         <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Analyzing community trends...</p>
                     </div>
                 ) : (
-                    <div className="grid">
+                    <div className="social-grid">
 
 
                         {products.map((product, index) => (
@@ -110,6 +104,30 @@ const SocialWishlist = () => {
                     </div>
                 )}
             </main>
+            
+            <style>{`
+                .social-grid {
+                    display: grid;
+                    grid-template-columns: repeat(1, 1fr);
+                    gap: 2.5rem;
+                    width: 100%;
+                }
+                @media (min-width: 640px) {
+                    .social-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+                @media (min-width: 1024px) {
+                    .social-grid {
+                        grid-template-columns: repeat(3, 1fr);
+                    }
+                }
+                @media (min-width: 1400px) {
+                    .social-grid {
+                        grid-template-columns: repeat(4, 1fr);
+                    }
+                }
+            `}</style>
         </div>
     );
 };
@@ -127,8 +145,8 @@ const SocialProductCard = ({ product, rank, wishlistIds, toggleWishlist }) => (
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
         {/* Rank Badge */}
-        <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, background: 'var(--accent-primary)', color: 'white', padding: '0.3rem 0.8rem', borderRadius: '100px', fontSize: '0.75rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)' }}>
-            <Award size={12} /> #{rank} TRENDING
+        <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, background: 'linear-gradient(135deg, #FF3366, #FF9933)', color: '#ffffff', padding: '0.4rem 1rem', borderRadius: '100px', fontSize: '0.8rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 15px rgba(255, 51, 102, 0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Award size={14} /> #{rank} TRENDING
         </div>
 
         <button 

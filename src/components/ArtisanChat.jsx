@@ -85,7 +85,7 @@ const ArtisanChat = ({ orderId, recipientId, recipientName, onClose, embedded = 
     };
 
     return (
-        <div className={embedded ? "" : "glass-panel"} style={embedded ? {
+        <div className={embedded ? "" : "glass-panel animate-fade-in"} style={embedded ? {
             display: 'flex', 
             flexDirection: 'column', 
             height: '100%',
@@ -96,52 +96,60 @@ const ArtisanChat = ({ orderId, recipientId, recipientName, onClose, embedded = 
             position: 'fixed', 
             bottom: '2rem', 
             right: '2rem', 
-            width: '380px', 
-            height: '500px', 
+            width: '400px', 
+            height: '550px', 
             display: 'flex', 
             flexDirection: 'column', 
             zIndex: 2000,
             padding: 0,
             overflow: 'hidden',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-            border: '1px solid var(--border-light)',
-            background: 'var(--bg-secondary)'
+            boxShadow: 'var(--shadow-xl)',
+            border: '1px solid var(--border)',
+            background: 'var(--bg)',
+            borderRadius: 'var(--radius-lg)'
         }}>
             {/* Header - Only show if not embedded */}
             {!embedded && (
                 <div style={{ 
-                    padding: '1rem 1.25rem', 
-                    background: 'var(--accent-primary)', 
-                    color: 'white',
+                    padding: '1.25rem 1.5rem', 
+                    background: 'var(--bg-secondary)', 
+                    color: 'var(--text)',
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    borderBottom: '1px solid var(--border)'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <User size={18} />
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)15', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--accent)30' }}>
+                            <User size={18} color="var(--accent)" />
                         </div>
                         <div>
-                            <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800' }}>{recipientName || 'Artisan'}</h4>
-                            <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>Order #{orderId?.toString().slice(-6).toUpperCase() || 'NEW'}</span>
+                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '900' }}>{recipientName || 'Artisan'}</h4>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }}></div>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700' }}>Order #{orderId?.toString().slice(-6).toUpperCase() || 'NEW'}</span>
+                            </div>
                         </div>
                     </div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}>
-                        <X size={20} />
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.3s' }} className="hover-scale">
+                        <X size={22} />
                     </button>
                 </div>
             )}
 
             {/* Message Area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(0,0,0,0.2)' }} className="custom-scrollbar">
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem', background: 'var(--bg)' }} className="custom-scrollbar">
                 {loading ? (
                     <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <div className="animate-spin" style={{ width: '24px', height: '24px', border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%' }}></div>
+                        <div className="animate-spin" style={{ width: '24px', height: '24px', border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%' }}></div>
                     </div>
                 ) : messages.length === 0 ? (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', opacity: 0.5 }}>
-                        <MessageSquare size={32} style={{ marginBottom: '0.5rem' }} />
-                        <p style={{ fontSize: '0.8rem' }}>No messages yet. Start the conversation about your custom gift!</p>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '2rem' }}>
+                        <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                            <MessageSquare size={28} color="var(--text-muted)" />
+                        </div>
+                        <h4 style={{ margin: '0 0 0.5rem', fontWeight: '800' }}>Direct Message</h4>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>Discuss your order requirements and customization directly with the artisan.</p>
                     </div>
                 ) : (
                     messages.map((msg, idx) => {
@@ -151,34 +159,35 @@ const ArtisanChat = ({ orderId, recipientId, recipientName, onClose, embedded = 
                         return (
                             <div key={idx} style={{ 
                                 alignSelf: isMe ? 'flex-end' : 'flex-start',
-                                maxWidth: '75%',
+                                maxWidth: '85%',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                alignItems: isMe ? 'flex-end' : 'flex-start',
-                                marginBottom: '0.5rem'
+                                alignItems: isMe ? 'flex-end' : 'flex-start'
                             }}>
                                 <div style={{ 
-                                    padding: '0.7rem 1rem', 
-                                    borderRadius: '16px',
-                                    borderTopRightRadius: isMe ? '4px' : '16px',
-                                    borderTopLeftRadius: isMe ? '16px' : '4px',
-                                    background: isMe ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.1)',
-                                    color: 'white',
+                                    padding: '0.8rem 1.2rem', 
+                                    borderRadius: '1.2rem',
+                                    borderTopRightRadius: isMe ? '0.2rem' : '1.2rem',
+                                    borderTopLeftRadius: isMe ? '1.2rem' : '0.2rem',
+                                    background: isMe ? 'var(--text)' : 'var(--bg-secondary)',
+                                    color: isMe ? 'var(--bg)' : 'var(--text)',
                                     fontSize: '0.9rem',
-                                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-                                    position: 'relative',
-                                    lineHeight: '1.4'
+                                    fontWeight: '500',
+                                    boxShadow: 'var(--shadow-sm)',
+                                    border: isMe ? 'none' : '1px solid var(--border)',
+                                    lineHeight: '1.5'
                                 }}>
                                     {msg.content}
                                     <div style={{ 
                                         fontSize: '0.65rem', 
-                                        opacity: 0.6, 
-                                        marginTop: '4px',
+                                        opacity: 0.7, 
+                                        marginTop: '0.4rem',
                                         textAlign: 'right',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'flex-end',
-                                        gap: '4px'
+                                        gap: '0.4rem',
+                                        fontWeight: '700'
                                     }}>
                                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         {isMe && <span style={{ color: 'var(--success)' }}>✓✓</span>}
@@ -192,46 +201,48 @@ const ArtisanChat = ({ orderId, recipientId, recipientName, onClose, embedded = 
             </div>
 
             {/* Input Area */}
-            <form onSubmit={handleSend} style={{ padding: '1rem', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-light)' }}>
-                <div style={{ position: 'relative' }}>
-                    <input 
-                        type="text" 
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type a message..."
-                        style={{ 
-                            width: '100%', 
-                            padding: '0.75rem 3rem 0.75rem 1rem', 
-                            borderRadius: '24px', 
-                            background: 'var(--bg-tertiary)', 
-                            border: '1px solid var(--border-light)',
-                            color: 'white',
-                            fontSize: '0.85rem',
-                            outline: 'none'
-                        }}
-                    />
+            <form onSubmit={handleSend} style={{ padding: '1.25rem', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
+                <div style={{ position: 'relative', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <input 
+                            type="text" 
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Message artisan..."
+                            style={{ 
+                                width: '100%', 
+                                padding: '0.85rem 1.25rem', 
+                                borderRadius: 'var(--radius-full)', 
+                                background: 'var(--bg)', 
+                                border: '1px solid var(--border)',
+                                color: 'var(--text)',
+                                fontSize: '0.9rem',
+                                fontWeight: '500',
+                                outline: 'none',
+                                transition: 'all 0.3s'
+                            }}
+                            className="input-focus"
+                        />
+                    </div>
                     <button 
                         type="submit"
                         disabled={!input.trim()}
                         style={{ 
-                            position: 'absolute', 
-                            right: '6px', 
-                            top: '50%', 
-                            transform: 'translateY(-50%)',
-                            width: '32px', 
-                            height: '32px', 
+                            width: '45px', 
+                            height: '45px', 
                             borderRadius: '50%', 
-                            background: 'var(--accent-primary)', 
+                            background: input.trim() ? 'var(--text)' : 'var(--border)', 
                             border: 'none', 
-                            color: 'white', 
+                            color: 'var(--bg)', 
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'center',
                             cursor: 'pointer',
-                            opacity: input.trim() ? 1 : 0.5
+                            transition: 'all 0.3s',
+                            boxShadow: input.trim() ? 'var(--shadow-md)' : 'none'
                         }}
                     >
-                        <Send size={14} />
+                        <Send size={18} />
                     </button>
                 </div>
             </form>

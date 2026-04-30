@@ -33,15 +33,19 @@ const CreatorWallet = () => {
     };
 
     const handleWithdraw = async () => {
-        if (earnings.available <= 0) return error("No available funds to withdraw.");
+        const amount = prompt("Enter amount to withdraw (₹):", earnings.available);
+        if (!amount || isNaN(amount) || amount <= 0) return;
+        
+        if (amount > earnings.available) return error("Insufficient balance");
+
         try {
-            const res = await axios.post('/creator-dashboard/earnings/withdraw', { amount: earnings.available, method: 'UPI' });
+            const res = await axios.post('/wallet/request-withdrawal', { amount: Number(amount) });
             if (res.data.success) {
                 success("Withdrawal request submitted! Processing in 3-5 days.");
                 fetchEarnings();
             }
         } catch (err) {
-            error("Withdrawal request failed.");
+            error(err.response?.data?.message || "Withdrawal request failed.");
         }
     };
 

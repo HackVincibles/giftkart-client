@@ -1,142 +1,126 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
-import { Link } from 'react-router-dom';
-import { ShoppingCart, Package, DollarSign, TrendingUp, Sparkles, MessageSquare } from 'lucide-react';
+import { ShoppingCart, Package, DollarSign, TrendingUp, Sparkles, MessageSquare, Plus, ArrowRight, User, Settings, LogOut, ChevronRight } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const CreatorDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    // In a real app, this would fetch from /creator-dashboard
-    // For now, setting mock data after timeout
+    // Mock data for now
     setTimeout(() => {
       setData({
         pendingOrders: 12,
         activeProducts: 34,
-        totalEarnings: '45,200',
-        rating: 4.8
+        totalEarnings: 45200,
+        rating: 4.8,
+        recentOrders: [
+            { id: '#GK-8924', product: 'Custom Photo Frame', status: 'Pending', customization: '2 Photos, Engraving' },
+            { id: '#GK-8923', product: 'Memory Scrapbook', status: 'In Production', customization: 'AI Poem Included' },
+            { id: '#GK-8922', product: 'Handcrafted Lamp', status: 'Completed', customization: 'Warm LEDs' }
+        ]
       });
       setLoading(false);
-    }, 1000);
+    }, 800);
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="kl-root">
       <Navbar />
       
-      <div className="dashboard-layout animate-fade-in">
-        {/* Creator Sidebar */}
-        <div className="sidebar" style={{ padding: '2rem 1rem' }}>
-          <div style={{ marginBottom: '2rem', padding: '0 1rem' }}>
-            <h3 style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Creator Studio
-            </h3>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div className="btn" style={{ background: 'var(--accent-primary)', color: 'white', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <TrendingUp size={20} /> Dashboard
-            </div>
-            <div className="btn" style={{ background: 'transparent', color: 'var(--text-secondary)', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <ShoppingCart size={20} /> Orders Queue
-            </div>
-            <div className="btn" style={{ background: 'transparent', color: 'var(--text-secondary)', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Package size={20} /> Products
-            </div>
-            <div className="btn" style={{ background: 'transparent', color: 'var(--text-secondary)', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Sparkles size={20} /> AI Assistance
-            </div>
-            <div className="btn" style={{ background: 'transparent', color: 'var(--text-secondary)', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <DollarSign size={20} /> Earnings & Wallet
-            </div>
-          </div>
-        </div>
-
-        <div className="main-content">
-          <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <main className="container" style={{ paddingTop: '8rem', paddingBottom: '8rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4rem' }}>
             <div>
-              <h1 className="dashboard-title" style={{ fontWeight: '900', marginBottom: '0.25rem' }}>Creator Dashboard</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Welcome back to your studio, {user?.displayName}.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-light)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>
+                    <Sparkles size={14} /> Creator Studio
+                </div>
+                <h1 style={{ fontSize: '3rem', lineHeight: '1' }}>Your Creative Space</h1>
             </div>
-            <button className="btn btn-primary mobile-full-width" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-              <Package size={18} /> Add New Product
+            <button onClick={() => navigate('/add-product')} className="btn btn-primary">
+                <Plus size={18} /> New Product
             </button>
-          </div>
-
-
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>Loading your studio data...</div>
-          ) : (
-            <>
-              <div className="grid">
-                <div className="stat-card">
-                  <h3 className="stat-label">Pending Orders</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                    <ShoppingCart size={32} color="var(--warning)" />
-                    <p className="stat-value" style={{ margin: 0 }}>{data.pendingOrders}</p>
-                  </div>
-                  <button className="btn btn-secondary mt-4 w-full">View Queue</button>
-                </div>
-
-                <div className="stat-card">
-                  <h3 className="stat-label">Total Earnings (This Month)</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                    <DollarSign size={32} color="var(--success)" />
-                    <p className="stat-value" style={{ margin: 0 }}>₹{data.totalEarnings}</p>
-                  </div>
-                  <button className="btn btn-secondary mt-4 w-full">Withdraw to Bank</button>
-                </div>
-
-                <div className="stat-card" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05))', borderColor: 'var(--accent-primary)' }}>
-                  <h3 className="stat-label" style={{ color: 'var(--accent-secondary)' }}>AI Insights</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                    <Sparkles size={32} color="var(--accent-primary)" />
-                    <p style={{ fontWeight: '500', margin: 0 }}>High demand for "Mother's Day" products</p>
-                  </div>
-                  <button className="btn mt-4 w-full" style={{ background: 'var(--accent-primary)', color: 'white' }}>Generate Product Ideas</button>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '2.5rem' }}>
-                <h2 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', fontWeight: '800' }}>Recent Order Requests</h2>
-                <div className="glass-panel" style={{ padding: '0', overflowX: 'auto', borderRadius: '16px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                    <thead>
-                      <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order ID</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Product</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customization</th>
-                        <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      <tr style={{ borderTop: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '1rem' }}>#GK-8924</td>
-                        <td style={{ padding: '1rem' }}>Custom Photo Frame</td>
-                        <td style={{ padding: '1rem' }}><span style={{ color: 'var(--warning)' }}>Pending</span></td>
-                        <td style={{ padding: '1rem' }}>2 Photos, Engraving</td>
-                        <td style={{ padding: '1rem' }}><button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Process</button></td>
-                      </tr>
-                      <tr style={{ borderTop: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '1rem' }}>#GK-8923</td>
-                        <td style={{ padding: '1rem' }}>Memory Scrapbook</td>
-                        <td style={{ padding: '1rem' }}><span style={{ color: 'var(--accent-secondary)' }}>In Production</span></td>
-                        <td style={{ padding: '1rem' }}>AI Poem Included</td>
-                        <td style={{ padding: '1rem' }}><button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Update</button></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
         </div>
-      </div>
+
+        {loading ? (
+            <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-muted)' }}>Curating your studio insights...</div>
+        ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+                {/* Stats Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
+                    <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: 'var(--radius-lg)' }}>
+                        <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-light)', marginBottom: '1rem' }}>Revenue</p>
+                        <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>₹{data.totalEarnings.toLocaleString()}</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.8rem' }}>
+                            <TrendingUp size={14} /> +12% from last month
+                        </div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: 'var(--radius-lg)' }}>
+                        <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-light)', marginBottom: '1rem' }}>Active Curation</p>
+                        <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{data.activeProducts}</h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Items listed in marketplace</p>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: 'var(--radius-lg)', background: 'var(--bg-secondary)' }}>
+                        <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-light)', marginBottom: '1rem' }}>Pending Requests</p>
+                        <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{data.pendingOrders}</h2>
+                        <button style={{ color: 'var(--text)', fontSize: '0.8rem', fontWeight: '700', textDecoration: 'underline' }}>View Queue</button>
+                    </div>
+                </div>
+
+                {/* AI Insights Card */}
+                <div style={{ background: 'var(--accent)', color: 'var(--white)', padding: '3rem', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ maxWidth: '600px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.7, marginBottom: '1.5rem' }}>
+                            <Sparkles size={14} /> Intelligence Suggestion
+                        </div>
+                        <h3 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: 'inherit' }}>Trending: Sustainable Packaging</h3>
+                        <p style={{ opacity: 0.8, lineHeight: '1.7' }}>Our community is showing a 40% increase in searches for "eco-friendly gifts". Consider updating your packaging options to increase conversion.</p>
+                    </div>
+                    <button className="btn" style={{ background: 'var(--white)', color: 'var(--black)' }}>Update Curation</button>
+                </div>
+
+                {/* Recent Orders Table */}
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1.5rem' }}>Recent Order Requests</h3>
+                        <button style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>View All <ChevronRight size={14} /></button>
+                    </div>
+                    <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: 0 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 2rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-light)' }}>Order</th>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 2rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-light)' }}>Product</th>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 2rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-light)' }}>Status</th>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 2rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-light)' }}>Notes</th>
+                                    <th style={{ textAlign: 'right', padding: '1.5rem 2rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-light)' }}>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.recentOrders.map((order, idx) => (
+                                    <tr key={idx} style={{ borderBottom: idx === data.recentOrders.length - 1 ? 'none' : '1px solid var(--border)' }}>
+                                        <td style={{ padding: '1.5rem 2rem', fontSize: '0.9rem', fontWeight: '700' }}>{order.id}</td>
+                                        <td style={{ padding: '1.5rem 2rem', fontSize: '0.9rem' }}>{order.product}</td>
+                                        <td style={{ padding: '1.5rem 2rem' }}>
+                                            <span style={{ fontSize: '0.75rem', padding: '0.3rem 0.8rem', borderRadius: '20px', background: order.status === 'Completed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: order.status === 'Completed' ? '#10b981' : '#f59e0b' }}>{order.status}</span>
+                                        </td>
+                                        <td style={{ padding: '1.5rem 2rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{order.customization}</td>
+                                        <td style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>
+                                            <button style={{ color: 'var(--text)', fontSize: '0.8rem', fontWeight: '700' }}>Manage</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        )}
+      </main>
     </div>
   );
 };

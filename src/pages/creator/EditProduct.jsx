@@ -74,7 +74,7 @@ const EditProduct = () => {
 
     const data = new FormData();
     data.append('file', file);
-    data.append('upload_preset', 'giftkart_products');
+    data.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'GIFTKART');
 
     try {
       setLoading(true);
@@ -296,15 +296,41 @@ const EditProduct = () => {
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
-            style={{ width: '100%', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} 
-            disabled={loading}
-          >
-            <Save size={20} />
-            {loading ? 'Updating...' : 'Save Changes'}
-          </button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button 
+              type="button" 
+              onClick={async () => {
+                if (window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
+                  try {
+                    setLoading(true);
+                    const res = await axios.delete(`/seller-products/${productId}`);
+                    if (res.data.success) {
+                      success("Product deleted successfully!");
+                      navigate('/creator-dashboard/products');
+                    }
+                  } catch (err) {
+                    error("Failed to delete product.");
+                    setLoading(false);
+                  }
+                }
+              }}
+              className="btn btn-secondary" 
+              style={{ flex: 1, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }} 
+              disabled={loading}
+            >
+              <Trash2 size={20} />
+              Delete
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ flex: 2, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} 
+              disabled={loading}
+            >
+              <Save size={20} />
+              {loading ? 'Updating...' : 'Save Changes'}
+            </button>
+          </div>
         </div>
       </form>
     </div>

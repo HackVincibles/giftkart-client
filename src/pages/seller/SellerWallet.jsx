@@ -35,7 +35,25 @@ const SellerWallet = () => {
     fetchWallet();
   }, []);
 
-  const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+  const handleWithdraw = async () => {
+    const amount = prompt("Enter amount to withdraw (₹):", data?.balance);
+    if (!amount || isNaN(amount) || amount <= 0) return;
+    
+    if (amount > data.balance) {
+      addToast({ type: 'error', message: 'Insufficient balance' });
+      return;
+    }
+
+    try {
+      const res = await axios.post('/wallet/request-withdrawal', { amount: Number(amount) });
+      if (res.data.success) {
+        addToast({ type: 'success', message: 'Withdrawal request submitted!' });
+        fetchWallet();
+      }
+    } catch (err) {
+      addToast({ type: 'error', message: err.response?.data?.message || 'Withdrawal failed' });
+    }
+  };
 
   if (loading) return <div style={{ padding: '3rem', textAlign: 'center' }}>Loading your wallet...</div>;
 
@@ -62,6 +80,7 @@ const SellerWallet = () => {
             className="btn btn-primary" 
             style={{ width: '100%', padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
             disabled={!data || data.balance <= 0}
+            onClick={handleWithdraw}
           >
             Withdraw Funds <ArrowRight size={18} />
           </button>

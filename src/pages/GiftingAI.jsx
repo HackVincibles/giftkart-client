@@ -1,93 +1,114 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
-import { Sparkles, Send, Mic, User, Bot, ShoppingCart, Calendar, Heart, Brain, Zap, ArrowRight, Loader, Star, ChevronDown, Filter, RefreshCw, MessageSquare } from 'lucide-react';
+import { Sparkles, Send, Mic, Brain, ArrowRight, Loader, Heart, ShoppingBag, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
-import { fireConfetti } from '../utils/confetti';
+import { useTheme } from '../context/ThemeContext';
+
+const confusedQuestions = [
+  {
+    text: "Let's figure this out together. Who is this gift for?",
+    key: "relationship",
+    options: ["Partner", "Parent", "Friend", "Colleague", "Child"]
+  },
+  {
+    text: "Got it. What's the occasion?",
+    key: "occasion",
+    options: ["Birthday", "Anniversary", "Just Because", "Milestone", "Apology"]
+  },
+  {
+    text: "And what kind of vibe are you hoping to achieve?",
+    key: "vibe",
+    options: ["Romantic", "Practical", "Funny", "Sentimental", "Luxury"]
+  }
+];
 
 const GiftingAI = () => {
-  const [messages, setMessages] = useState([
-    { role: 'bot', content: "Hi! I'm the GiftKart AI. Describe who you're shopping for, their personality, and the occasion. I'll search our entire marketplace to find something truly meaningful." }
-  ]);
+  const [mode, setMode] = useState(null); // 'brief' | 'confused' | null
+  const [confusedStep, setConfusedStep] = useState(0);
+  const [confusedAnswers, setConfusedAnswers] = useState({});
+
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
-  const [analysis, setAnalysis] = useState(null);
-  const [budget, setBudget] = useState(5000);
+  const [budget, setBudget] = useState(10000);
   const [wishlistIds, setWishlistIds] = useState(new Set());
-  const [cartIds, setCartIds] = useState(new Set());
-  const [orderedIds, setOrderedIds] = useState(new Set());
   
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
-  const { success, error, info } = useToast();
+  const { success, error } = useToast();
+  const { theme } = useTheme();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
-    scrollToBottom();
-    fetchWishlist();
-    fetchCart();
-    fetchOrders();
-  }, [messages]);
+    const fetchContext = async () => {
+        try {
+            const res = await axios.get('/wishlist');
+            if (res.data.success) {
+                const ids = new Set(res.data.data.products.filter(p => p.product).map(p => p.product._id));
+                setWishlistIds(ids);
+            }
+        } catch {}
+    };
+    fetchContext();
+  }, []);
 
-  const fetchWishlist = async () => {
-    try {
-        const res = await axios.get('/wishlist');
-        if (res.data.success) {
-            const ids = new Set(res.data.data.products.filter(p => p.product).map(p => p.product._id));
-            setWishlistIds(ids);
-        }
-    } catch (err) {
-        console.error('Wishlist fetch error:', err);
+  const startConfusedMode = () => {
+    setMode('confused');
+    setConfusedStep(0);
+    setConfusedAnswers({});
+    const q = confusedQuestions[0];
+    setMessages([{ role: 'bot', content: q.text, options: q.options, key: q.key }]);
+  };
+
+  const handleOptionSelect = async (key, option) => {
+    // Remove options from the previous message and add user response
+    setMessages(prev => {
+        const newMsg = [...prev];
+        if (newMsg.length > 0) newMsg[newMsg.length - 1].options = undefined;
+        return [...newMsg, { role: 'user', content: option }];
+    });
+    
+    const newAnswers = { ...confusedAnswers, [key]: option };
+    setConfusedAnswers(newAnswers);
+    
+    const nextStep = confusedStep + 1;
+    if (nextStep < confusedQuestions.length) {
+      setConfusedStep(nextStep);
+      const q = confusedQuestions[nextStep];
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'bot', content: q.text, options: q.options, key: q.key }]);
+      }, 500);
+    } else {
+      setConfusedStep(nextStep);
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'bot', content: "Perfect. Let me find some wonderful gifts based on your answers..." }]);
+        triggerConfusedAI(newAnswers);
+      }, 500);
     }
   };
 
-  const fetchCart = async () => {
+  const triggerConfusedAI = async (answers) => {
+    setLoading(true);
+    const query = `I am looking for a ${answers.vibe} gift for my ${answers.relationship} for their ${answers.occasion}.`;
     try {
-        const res = await axios.get('/cart');
-        if (res.data.success) {
-            const ids = new Set(res.data.data.items.map(i => i.product._id));
-            setCartIds(ids);
-        }
+      const res = await axios.post('/ai/recommendations', { 
+        query,
+        context: { budget: { min: 0, max: budget } }
+      });
+      if (res.data.success) {
+        const { recommendations: recs, message: aiMessage } = res.data.data;
+        setRecommendations(recs || []);
+        setMessages(prev => [...prev, { role: 'bot', content: aiMessage || "I've curated a few items that match your description perfectly." }]);
+      }
     } catch (err) {
-        console.error('Cart fetch error:', err);
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-        const res = await axios.get('/payment/my-orders');
-        if (res.data.success) {
-            const ids = new Set(res.data.data.flatMap(o => (o.products || []).map(i => i.product?._id || i.product)).filter(id => id));
-            setOrderedIds(ids);
-        }
-    } catch (err) {
-        console.error('Orders fetch error:', err);
-    }
-  };
-
-  const toggleWishlist = async (productId) => {
-    try {
-        if (wishlistIds.has(productId)) {
-            await axios.delete(`/wishlist/${productId}`);
-            setWishlistIds(prev => {
-                const next = new Set(prev);
-                next.delete(productId);
-                return next;
-            });
-            success("Removed from favorites");
-        } else {
-            await axios.post('/wishlist/add', { productId });
-            setWishlistIds(prev => new Set(prev).add(productId));
-            success("Added to favorites!");
-            fireConfetti('heart');
-        }
-    } catch (err) {
-        error("Failed to update favorites");
+      error("The AI assistant is momentarily unavailable. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,141 +124,167 @@ const GiftingAI = () => {
     try {
       const res = await axios.post('/ai/recommendations', { 
         query: userMsg,
-        context: {
-            budget: { min: 0, max: budget }
-        }
+        context: { budget: { min: 0, max: budget } }
       });
 
       if (res.data.success) {
-        const { recommendations: recs, analysis: aiAnalysis, message: aiMessage, conversationMode } = res.data.data;
-        
+        const { recommendations: recs, message: aiMessage } = res.data.data;
         setRecommendations(recs || []);
-        setAnalysis(aiAnalysis);
-        
-        setMessages(prev => [...prev, { 
-          role: 'bot', 
-          content: aiMessage || (conversationMode ? res.data.data.message : "Here are my recommendations!")
-        }]);
+        setMessages(prev => [...prev, { role: 'bot', content: aiMessage || "I've curated a few items that match your description." }]);
       }
     } catch (err) {
-      console.error('AI Connection Error:', err);
-      error("AI is having trouble connecting. Please try again.");
+      error("The AI assistant is momentarily unavailable. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const toggleWishlist = async (productId) => {
+    try {
+        if (wishlistIds.has(productId)) {
+            await axios.delete(`/wishlist/${productId}`);
+            setWishlistIds(prev => { const next = new Set(prev); next.delete(productId); return next; });
+            success("Removed from favorites");
+        } else {
+            await axios.post('/wishlist/add', { productId });
+            setWishlistIds(prev => new Set(prev).add(productId));
+            success("Added to favorites!");
+        }
+    } catch { error("Action failed"); }
+  };
+
   const addToCart = async (productId) => {
     try {
       await axios.post('/cart/add', { productId, quantity: 1 });
-      setCartIds(prev => new Set(prev).add(productId));
-      success("Added to cart!");
-    } catch (err) {
-      error("Failed to add to cart.");
-    }
+      success("Added to bag");
+    } catch { error("Failed to add to bag"); }
   };
-
-  const handleOrderNow = async (productId) => {
-    try {
-        await axios.post('/cart/add', { productId, quantity: 1 });
-        fireConfetti('success');
-        setTimeout(() => navigate('/cart'), 1500);
-    } catch (err) {
-        error("Failed to initiate order.");
-    }
-  };
-
-  // Filter out products that have already been ordered
-  const filteredRecommendations = recommendations.filter(rec => !orderedIds.has(rec.product?._id));
 
   return (
-    <div style={{ height: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column', color: 'var(--text-primary)', overflow: 'hidden' }}>
+    <div className="kl-root" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Navbar />
       
-      {/* Background Glows */}
-      <div style={{ position: 'fixed', top: '10%', right: '10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
-      <div style={{ position: 'fixed', bottom: '10%', left: '10%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(37, 99, 235, 0.03) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
-
-      <main className="gifting-ai-main" style={{ flex: 1, display: 'flex', height: 'calc(100vh - 70px)', position: 'relative', zIndex: 1, flexDirection: 'row' }}>
-
-        
-        {/* Left Section: Recommendations (Flexible Width) */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', background: 'rgba(0,0,0,0.1)' }} className="custom-scrollbar">
-          {filteredRecommendations.length > 0 ? (
-            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+      <main style={{ flex: 1, display: 'flex', paddingTop: '70px', overflow: 'hidden', height: '100%' }}>
+        {/* Chat Section */}
+        <div style={{ width: '400px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', position: 'relative', zIndex: 10 }}>
+          <div style={{ padding: '2rem', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ background: 'var(--accent)', padding: '0.6rem', borderRadius: '12px' }}><Brain size={20} color="var(--white)" /></div>
                 <div>
-                    <h2 style={{ fontSize: '1.6rem', fontWeight: '800', marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>Curated Selections</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Based on: <span style={{ color: 'var(--accent-primary)' }}>{messages.filter(m => m.role === 'user').pop()?.content || 'Your request'}</span></p>
+                    <h2 style={{ fontSize: '1rem', fontWeight: '700' }}>Assistant</h2>
+                    <p style={{ fontSize: '0.65rem', color: 'var(--text-light)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Ready to listen</p>
                 </div>
-                
-                {analysis && (
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        {analysis.personalityTraits.slice(0, 2).map(trait => (
-                            <div key={trait} style={{ background: 'var(--accent-primary)10', color: 'var(--accent-primary)', padding: '0.3rem 0.7rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 'bold', border: '1px solid var(--accent-primary)20' }}>
-                                #{trait}
-                            </div>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: '700' }}>
+                    <span>Budget Limit</span>
+                    <span>₹{budget.toLocaleString()}</span>
+                </div>
+                <input type="range" min="500" max="50000" step="500" value={budget} onChange={e => setBudget(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--text)' }} />
+            </div>
+          </div>
+
+          {mode === null ? (
+            <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <Sparkles size={40} color="var(--accent)" style={{ marginBottom: '1rem' }} />
+                <h2 style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>How can I help you?</h2>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+                <button onClick={() => { setMode('brief'); setMessages([{ role: 'bot', content: "Welcome to Brief Mode. Tell me about the person you're shopping for—their quirks, their loves, or a moment you want to celebrate. I'll find something they'll quietly love." }]); }} className="btn btn-secondary" style={{ padding: '1.2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '1px solid var(--border)', borderRadius: '12px', height: 'auto', whiteSpace: 'normal' }}>
+                  <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><MessageSquare size={16} /> Brief Mode</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>You know what you want to say. Just describe the person and occasion.</p>
+                </button>
+                <button onClick={() => { startConfusedMode(); }} className="btn btn-primary" style={{ padding: '1.2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.4rem', borderRadius: '12px', height: 'auto', whiteSpace: 'normal' }}>
+                  <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Brain size={16} /> Confused Mode</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.4' }}>Not sure where to start? I'll ask you a few simple multiple-choice questions.</p>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }} className="kl-chat-scroll">
+                {messages.map((msg, idx) => (
+                  <div key={idx} style={{ 
+                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '90%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.4rem',
+                    alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start'
+                  }}>
+                    <div style={{ 
+                        padding: '1rem 1.2rem',
+                        borderRadius: 'var(--radius-md)',
+                        background: msg.role === 'user' ? 'var(--accent)' : 'var(--bg)',
+                        color: msg.role === 'user' ? 'var(--white)' : 'var(--text)',
+                        fontSize: '0.85rem',
+                        lineHeight: '1.6',
+                        border: '1px solid var(--border)',
+                        boxShadow: 'var(--shadow)'
+                    }}>{msg.content}</div>
+                    
+                    {msg.options && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        {msg.options.map(opt => (
+                          <button key={opt} onClick={() => handleOptionSelect(msg.key, opt)} className="btn btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', borderRadius: '100px', border: '1px solid var(--border)' }}>
+                            {opt}
+                          </button>
                         ))}
-                    </div>
-                )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {loading && <div className="kl-typing">Thinking...</div>}
+                <div ref={messagesEndRef} />
               </div>
 
-              {/* Results Grid - Compact Cards */}
-              <div className="grid">
+              {mode === 'brief' && (
+                <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
+                  <form onSubmit={handleSend} style={{ position: 'relative' }}>
+                    <input 
+                      type="text" placeholder="Tell me about them..." value={input}
+                      onChange={e => setInput(e.target.value)}
+                      style={{ borderRadius: 'var(--radius-full)', paddingRight: '3rem' }}
+                      disabled={loading}
+                    />
+                    <button type="submit" style={{ position: 'absolute', right: '6px', top: '6px', bottom: '6px', width: '34px', background: 'var(--accent)', borderRadius: '50%', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}><Send size={14} /></button>
+                  </form>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
-                {filteredRecommendations.map((rec, idx) => (
-                  <div key={idx} className="glass-panel" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'all 0.2s ease', border: '1px solid var(--border-light)' }}>
-                    <div style={{ position: 'relative', height: '160px' }}>
-                        <img 
-                            src={rec.product?.images?.[0]?.url || 'https://via.placeholder.com/400x300'} 
-                            alt={rec.product?.name} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        />
-                        <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(5px)', padding: '0.3rem 0.6rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.3rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <span style={{ fontWeight: 'bold', fontSize: '0.75rem', color: 'white' }}>{Math.round(rec.score * 100)}% Match</span>
-                        </div>
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                toggleWishlist(rec.product?._id);
-                            }}
-                            style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.1)', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: wishlistIds.has(rec.product?._id) ? '#ef4444' : 'white' }}
-                        >
-                            <Heart size={16} fill={wishlistIds.has(rec.product?._id) ? '#ef4444' : 'transparent'} />
-                        </button>
+        {/* Results Section */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '3rem', background: 'var(--bg)' }}>
+          {recommendations.length > 0 ? (
+            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+              <div style={{ marginBottom: '3rem' }}>
+                  <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Curated Edit</h2>
+                  <p style={{ color: 'var(--text-muted)' }}>Selected based on your conversation</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+                {recommendations.map((rec, idx) => (
+                  <div key={idx} style={{ background: 'var(--bg-secondary)', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => navigate(`/product/${rec.product?._id}`)}>
+                    <div style={{ position: 'relative', height: '250px', width: '100%' }}>
+                        <img src={rec.product?.images?.[0]?.url || 'https://via.placeholder.com/600'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'var(--glass)', backdropFilter: 'blur(10px)', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text)' }}>{Math.round(rec.score * 100)}% Match</div>
                     </div>
-                    
-                    <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <h3 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.4rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.product?.name}</h3>
-                        <p style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--accent-primary)', marginBottom: '0.75rem' }}>₹{rec.product?.basePrice}</p>
-                        
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.6rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border-light)' }}>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic', lineHeight: '1.3' }}>"{rec.whyPerfect}"</p>
+                    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', lineHeight: '1.3', flex: 1 }}>{rec.product?.name}</h3>
+                            <span style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--accent)', whiteSpace: 'nowrap' }}>₹{rec.product?.basePrice}</span>
                         </div>
-
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: 'auto' }}>
-                            <button 
-                                onClick={() => addToCart(rec.product?._id)} 
-                                className={cartIds.has(rec.product?._id) ? "btn btn-secondary" : "btn btn-primary"}
-                                style={{ flex: 1, height: '36px', fontSize: '0.8rem', fontWeight: '700', borderRadius: '8px', opacity: cartIds.has(rec.product?._id) ? 0.7 : 1 }}
-                                disabled={cartIds.has(rec.product?._id)}
-                            >
-                                {cartIds.has(rec.product?._id) ? 'In Cart' : 'Add'}
-                            </button>
-                            <button 
-                                onClick={() => handleOrderNow(rec.product?._id)} 
-                                className="btn btn-secondary"
-                                style={{ flex: 1, height: '36px', fontSize: '0.8rem', fontWeight: '700', borderRadius: '8px', background: 'rgba(255,255,255,0.05)' }}
-                            >
-                                Order
-                            </button>
-                            <button 
-                                onClick={() => navigate(`/product/${rec.product?._id}`)} 
-                                className="btn btn-secondary" 
-                                style={{ width: '36px', height: '36px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '8px' }}
-                            >
-                                <ArrowRight size={16} />
+                        <div style={{ background: 'var(--bg)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--text-secondary)', marginBottom: '1.5rem', flex: 1, display: 'flex', alignItems: 'center' }}>
+                            "{rec.whyPerfect}"
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: 'auto' }}>
+                            <button onClick={(e) => { e.stopPropagation(); addToCart(rec.product?._id); }} className="btn btn-primary" style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', fontWeight: '600' }}>Add to Bag</button>
+                            <button onClick={(e) => { e.stopPropagation(); toggleWishlist(rec.product?._id); }} className="btn btn-secondary" style={{ padding: '0 1rem', borderRadius: '12px' }}>
+                                <Heart size={18} fill={wishlistIds.has(rec.product?._id) ? 'var(--accent)' : 'none'} color={wishlistIds.has(rec.product?._id) ? 'var(--accent)' : 'currentColor'} />
                             </button>
                         </div>
                     </div>
@@ -246,159 +293,18 @@ const GiftingAI = () => {
               </div>
             </div>
           ) : (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
-              <div style={{ background: 'var(--bg-tertiary)', padding: '2rem', borderRadius: '50%', marginBottom: '2rem', border: '1px solid var(--border-light)' }}>
-                <Sparkles size={48} color="var(--accent-primary)" style={{ opacity: 0.5 }} />
-              </div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '0.5rem' }}>AI Curation Ready</h2>
-              <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', fontSize: '0.9rem' }}>
-                Describe a personality in the chat sidebar to populate this marketplace with personalized gift matches.
-              </p>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.4 }}>
+              <Sparkles size={64} style={{ marginBottom: '2rem' }} />
+              <h2 style={{ fontSize: '1.5rem' }}>Your curation will appear here</h2>
             </div>
           )}
         </div>
-
-        {/* Right Sidebar: Chat (Narrower - 30%) */}
-        <div className="ai-sidebar" style={{ 
-          width: '30%', 
-          minWidth: '320px',
-          borderLeft: '1px solid var(--border-light)', 
-          display: 'flex', 
-          flexDirection: 'column',
-          background: 'rgba(15, 23, 42, 0.8)',
-          backdropFilter: 'blur(40px)',
-          height: '100%'
-        }}>
-          {/* Sidebar Header */}
-          <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              <div style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', padding: '0.5rem', borderRadius: '10px' }}>
-                <Brain size={20} color="white" />
-              </div>
-              <div>
-                <h2 style={{ fontSize: '1rem', margin: 0, fontWeight: '700' }}>GiftMind AI</h2>
-                <div style={{ fontSize: '0.65rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <div className="animate-pulse" style={{ width: '5px', height: '5px', background: 'var(--success)', borderRadius: '50%' }}></div> LIVE ANALYSIS
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Max Budget</span>
-                    <span style={{ fontWeight: 'bold' }}>₹{budget}</span>
-                </div>
-                <input 
-                    type="range" min="500" max="20000" step="500" value={budget} 
-                    onChange={e => setBudget(e.target.value)}
-                    style={{ width: '100%', accentColor: 'var(--accent-primary)', height: '3px' }}
-                />
-            </div>
-          </div>
-
-          {/* WhatsApp-style Message Area (Scrollable Only Here) */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="custom-scrollbar">
-            {messages.map((msg, idx) => (
-              <div key={idx} style={{ 
-                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '85%',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.3rem',
-                alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start'
-              }}>
-                <div style={{ 
-                    padding: '0.75rem 1rem',
-                    borderRadius: '16px',
-                    borderBottomRightRadius: msg.role === 'user' ? '2px' : '16px',
-                    borderBottomLeftRadius: msg.role === 'bot' ? '2px' : '16px',
-                    background: msg.role === 'user' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                    color: 'white',
-                    fontSize: '0.85rem',
-                    lineHeight: '1.5',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                    border: msg.role === 'bot' ? '1px solid var(--border-light)' : 'none'
-                }}>
-                    {msg.content}
-                </div>
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', opacity: 0.7 }}>
-                    {msg.role === 'bot' ? 'AI Assistant' : 'You'}
-                </span>
-              </div>
-            ))}
-            {loading && (
-              <div style={{ alignSelf: 'flex-start', background: 'var(--bg-tertiary)', padding: '0.75rem 1rem', borderRadius: '16px 16px 16px 2px', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                    <div className="typing-dot" style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', borderRadius: '50%', animation: 'typingDot 1.4s infinite ease-in-out' }}></div>
-                    <div className="typing-dot" style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', borderRadius: '50%', animation: 'typingDot 1.4s infinite ease-in-out 0.2s' }}></div>
-                    <div className="typing-dot" style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', borderRadius: '50%', animation: 'typingDot 1.4s infinite ease-in-out 0.4s' }}></div>
-                </div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600', letterSpacing: '0.02em' }}>GiftKart AI is thinking...</span>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Sticky Bottom Input Area */}
-          <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid var(--border-light)', marginTop: 'auto' }}>
-            <form onSubmit={handleSend} style={{ display: 'flex', gap: '0.5rem', position: 'relative' }}>
-              <input 
-                type="text" 
-                className="input-field" 
-                placeholder="Message AI..." 
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                style={{ marginBottom: 0, paddingRight: '2.5rem', borderRadius: '12px', height: '44px', fontSize: '0.85rem' }}
-                disabled={loading}
-              />
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
-                style={{ position: 'absolute', right: '5px', top: '5px', bottom: '5px', width: '34px', padding: 0, borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                disabled={loading || !input.trim()}
-              >
-                <Send size={16} />
-              </button>
-            </form>
-          </div>
-        </div>
       </main>
 
-
       <style>{`
-        @media (max-width: 1024px) {
-          .gifting-ai-main {
-            flex-direction: column !important;
-            height: auto !important;
-            overflow-y: auto !important;
-          }
-          .ai-sidebar {
-            width: 100% !important;
-            min-width: 100% !important;
-            height: 600px !important;
-            border-left: none !important;
-            border-top: 1px solid var(--border-light) !important;
-          }
-        }
-        
-        @keyframes typingDot {
-          0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-          40% { transform: scale(1.1); opacity: 1; }
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.1);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255,255,255,0.2);
-        }
+        .kl-chat-scroll::-webkit-scrollbar { width: 4px; }
+        .kl-chat-scroll::-webkit-scrollbar-thumb { background: var(--text-light); border-radius: 10px; }
+        .kl-typing { font-size: 0.75rem; color: var(--text-light); font-style: italic; }
       `}</style>
     </div>
   );

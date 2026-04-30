@@ -44,7 +44,7 @@ const AdminOverview = () => {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
             <StatCard label="Total Users" value={stats?.totalUsers?.toLocaleString() || '0'} icon={Users} color="#3b82f6" sub="Registered accounts" />
-            <StatCard label="Active Sellers" value={stats?.totalSellers?.toLocaleString() || '0'} icon={Store} color="#8b5cf6" sub="Verified creators" />
+            <StatCard label="Active Creators" value={stats?.totalSellers?.toLocaleString() || '0'} icon={Store} color="#8b5cf6" sub="Verified partners" />
             <StatCard label="Total Orders" value={stats?.totalOrders?.toLocaleString() || '0'} icon={ShoppingCart} color="#10b981" sub="Lifetime orders" />
             <StatCard label="Gross Revenue" value={`₹${(stats?.totalRevenue || 0).toLocaleString()}`} icon={DollarSign} color="#f59e0b" sub="Platform volume" />
           </div>
@@ -86,25 +86,25 @@ const AdminOverview = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Store size={20} color="var(--warning)" />
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>New Sellers</h3>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>New Creators</h3>
                 </div>
                 <Link to="/admin-dashboard/sellers" style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: '600' }}>View All</Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {data?.recentSellers?.length > 0 ? data.recentSellers.slice(0, 6).map(seller => (
-                  <div key={seller._id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-                    <div style={{ background: 'var(--accent-primary)', width: '36px', height: '36px', minWidth: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.9rem' }}>
-                      {seller.businessName?.[0] || 'S'}
+                {data?.recentSellers?.length > 0 ? data.recentSellers.slice(0, 6).map(seller => {
+                  const businessName = seller.creatorProfile?.businessName || seller.displayName || 'Creator';
+                  return (
+                    <div key={seller._id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                      <div style={{ background: 'var(--accent-primary)', width: '36px', height: '36px', minWidth: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.9rem' }}>
+                        {businessName[0]}
+                      </div>
+                      <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <p style={{ fontWeight: '600', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</p>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{seller.email}</p>
+                      </div>
                     </div>
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                      <p style={{ fontWeight: '600', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{seller.businessName}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{seller.email}</p>
-                    </div>
-                    <span style={{ fontSize: '0.6rem', padding: '2px 6px', background: seller.isVerified ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: seller.isVerified ? 'var(--success)' : 'var(--warning)', borderRadius: '4px', fontWeight: '700', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                      {seller.verificationStatus}
-                    </span>
-                  </div>
-                )) : <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No sellers yet.</p>}
+                  );
+                }) : <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No creators yet.</p>}
               </div>
             </div>
           </div>

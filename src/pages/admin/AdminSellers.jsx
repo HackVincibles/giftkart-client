@@ -14,7 +14,7 @@ const statusStyle = (status) => {
 };
 
 const AdminSellers = () => {
-  const [sellers, setSellers] = useState([]);
+  const [creators, setCreators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('pending'); // Default to pending for quick approval flow
@@ -33,7 +33,7 @@ const AdminSellers = () => {
       if (statusFilter) params.append('verificationStatus', statusFilter);
       const res = await axios.get(`/admin/sellers?${params}`);
       if (res.data.success) {
-        setSellers(res.data.data.sellers);
+        setCreators(res.data.data.sellers);
         setPagination(res.data.data.pagination);
       }
     } catch (err) {
@@ -78,8 +78,8 @@ const AdminSellers = () => {
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.25rem' }}>Seller Verification</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>{pagination.total || 0} sellers · Pending sellers require your approval to list products</p>
+          <h1 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.25rem' }}>Creator Verification</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>{pagination.total || 0} creators · Pending creators require your approval to list products</p>
         </div>
         <button onClick={fetchSellers} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <RefreshCw size={16} /> Refresh
@@ -123,16 +123,17 @@ const AdminSellers = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Loading sellers...</td></tr>
-            ) : sellers.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Loading creators...</td></tr>
+            ) : creators.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
                   <Store size={48} style={{ opacity: 0.15, display: 'block', margin: '0 auto 1rem' }} />
-                  <p>{statusFilter === 'pending' ? '🎉 No pending sellers! All caught up.' : 'No sellers found.'}</p>
+                  <p>{statusFilter === 'pending' ? '🎉 No pending creators! All caught up.' : 'No creators found.'}</p>
                 </td>
               </tr>
-            ) : sellers.map(seller => {
-              const { color, bg, label } = statusStyle(seller.verificationStatus);
+            ) : creators.map(seller => {
+              const { color, bg, label } = statusStyle(seller.creatorProfile?.verificationStatus || 'pending');
+              const businessName = seller.creatorProfile?.businessName || seller.displayName;
               const isLoading = actionLoading?.startsWith(seller._id);
               return (
                 <tr key={seller._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
@@ -141,56 +142,56 @@ const AdminSellers = () => {
                   <td style={{ padding: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color, fontSize: '1rem', flexShrink: 0 }}>
-                        {seller.businessName?.[0] || <Store size={16} />}
+                        {businessName[0] || <Store size={16} />}
                       </div>
                       <div>
-                        <p style={{ fontWeight: '700', fontSize: '0.9rem' }}>{seller.businessName}</p>
+                        <p style={{ fontWeight: '700', fontSize: '0.9rem' }}>{businessName}</p>
                         <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Joined {new Date(seller.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '1rem', fontSize: '0.88rem' }}>{seller.ownerName}</td>
+                  <td style={{ padding: '1rem', fontSize: '0.88rem' }}>{seller.displayName}</td>
                   <td style={{ padding: '1rem' }}>
                     <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{seller.email}</p>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{seller.phone}</p>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{seller.phoneNumber || seller.creatorProfile?.phone}</p>
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    <p style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{seller.panNumber}</p>
-                    {seller.gstNumber && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>GST: {seller.gstNumber}</p>}
+                    <p style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{seller.creatorProfile?.panNumber || 'N/A'}</p>
+                    {seller.creatorProfile?.gstNumber && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>GST: {seller.creatorProfile.gstNumber}</p>}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ padding: '4px 12px', borderRadius: '20px', background: bg, color, fontSize: '0.75rem', fontWeight: '700' }}>
                       {label}
                     </span>
-                    {seller.rejectionReason && (
-                      <p style={{ fontSize: '0.7rem', color: 'var(--danger)', marginTop: '0.25rem' }}>Reason: {seller.rejectionReason}</p>
+                    {seller.creatorProfile?.rejectionReason && (
+                      <p style={{ fontSize: '0.7rem', color: 'var(--danger)', marginTop: '0.25rem' }}>Reason: {seller.creatorProfile.rejectionReason}</p>
                     )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      {seller.verificationStatus === 'pending' && (
+                      {seller.creatorProfile?.verificationStatus === 'pending' && (
                         <>
-                          <button onClick={() => handleVerify(seller._id, seller.businessName)} disabled={isLoading}
+                          <button onClick={() => handleVerify(seller._id, businessName)} disabled={isLoading}
                             className="btn btn-secondary"
                             style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}>
                             <CheckCircle size={13} /> Approve
                           </button>
-                          <button onClick={() => handleReject(seller._id, seller.businessName)} disabled={isLoading}
+                          <button onClick={() => handleReject(seller._id, businessName)} disabled={isLoading}
                             className="btn btn-secondary"
                             style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}>
                             <XCircle size={13} /> Reject
                           </button>
                         </>
                       )}
-                      {seller.verificationStatus === 'verified' && (
-                        <button onClick={() => handleSuspend(seller._id, seller.businessName)} disabled={isLoading}
+                      {seller.creatorProfile?.verificationStatus === 'verified' && (
+                        <button onClick={() => handleSuspend(seller._id, businessName)} disabled={isLoading}
                           className="btn btn-secondary"
                           style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', borderColor: 'rgba(148,163,184,0.2)' }}>
                           <AlertCircle size={13} /> Suspend
                         </button>
                       )}
-                      {(seller.verificationStatus === 'suspended' || seller.verificationStatus === 'rejected') && (
-                        <button onClick={() => handleVerify(seller._id, seller.businessName)} disabled={isLoading}
+                      {(seller.creatorProfile?.verificationStatus === 'suspended' || seller.creatorProfile?.verificationStatus === 'rejected') && (
+                        <button onClick={() => handleVerify(seller._id, businessName)} disabled={isLoading}
                           className="btn btn-secondary"
                           style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}>
                           <CheckCircle size={13} /> Re-approve

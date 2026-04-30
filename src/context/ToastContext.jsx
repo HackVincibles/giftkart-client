@@ -57,7 +57,7 @@ export const ToastProvider = ({ children }) => {
              t.type === 'error' ? <AlertCircle color="var(--danger)" size={20} /> :
              <AlertCircle color="var(--accent-primary)" size={20} />}
              
-            <span style={{ color: 'white', fontSize: '0.95rem', flex: 1 }}>{t.message}</span>
+            <span style={{ color: 'var(--text)', fontSize: '0.95rem', flex: 1, fontWeight: '500' }}>{t.message}</span>
             
             <button onClick={() => removeToast(t.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <X size={16} />

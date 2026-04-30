@@ -3,18 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { LogOut, User as UserIcon, Gift, ShoppingCart, X, Bell, Trash2, Check, Sparkles, Calendar, Heart, Users, Store, MessageSquare, Wallet, Shield, Search } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { LogOut, User as UserIcon, Gift, ShoppingBag, X, Bell, Trash2, Check, Sparkles, Calendar, Heart, Users, Store, MessageSquare, Wallet, Shield, Search, Sun, Moon } from 'lucide-react';
 import GlobalChatDrawer from './GlobalChatDrawer';
 
-// Admin-specific notification bell (fetches from /admin/notifications)
 const AdminNotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const ref = useRef(null);
 
-  const typeIcon = { seller_registration: Store, grievance: MessageSquare, withdrawal_request: Wallet, system: Shield };
-  const typeColor = { seller_registration: '#8b5cf6', grievance: '#ef4444', withdrawal_request: '#f59e0b', system: '#3b82f6' };
+  const typeIcon = { creator_registration: Store, grievance: MessageSquare, withdrawal_request: Wallet, system: Shield };
+  const typeColor = { creator_registration: 'var(--text)', grievance: '#ef4444', withdrawal_request: '#f59e0b', system: '#3b82f6' };
 
   useEffect(() => {
     fetchNotifs();
@@ -46,57 +46,28 @@ const AdminNotificationBell = () => {
     } catch {}
   };
 
-  const markAllRead = async () => {
-    try {
-      await axios.put('/admin/notifications/all/read');
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnread(0);
-    } catch {}
-  };
-
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(o => !o)}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '0.5rem', display: 'flex', alignItems: 'center' }}>
-        <Shield size={22} color={unread > 0 ? '#8b5cf6' : 'var(--text-muted)'} />
-        {unread > 0 && (
-          <span style={{ position: 'absolute', top: '2px', right: '2px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '17px', height: '17px', fontSize: '0.62rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', border: '2px solid var(--bg-secondary)' }}>
-            {unread > 9 ? '9+' : unread}
-          </span>
-        )}
+      <button onClick={() => setOpen(o => !o)} className="kl-nav-icon-btn">
+        <Shield size={20} color={unread > 0 ? 'var(--text)' : 'var(--text-muted)'} />
+        {unread > 0 && <span className="kl-notif-dot">{unread}</span>}
       </button>
 
       {open && (
-        <div className="glass-panel" style={{ position: 'absolute', top: '110%', right: 0, width: '360px', maxHeight: '460px', overflowY: 'auto', zIndex: 1100, boxShadow: '0 16px 48px rgba(0,0,0,0.5)', padding: '1rem', borderRadius: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: '800', margin: 0 }}>Admin Alerts</h3>
-            {unread > 0 && <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: '600' }}>Mark all read</button>}
+        <div className="glass-panel kl-dropdown">
+          <div className="kl-dropdown-header">
+            <h3>Admin Alerts</h3>
           </div>
-          {notifications.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-              <Shield size={32} style={{ opacity: 0.2, marginBottom: '0.5rem', display: 'block', margin: '0 auto 0.5rem' }} />
-              <p style={{ fontSize: '0.85rem' }}>No admin alerts</p>
-            </div>
-          ) : notifications.map(n => {
-            const Icon = typeIcon[n.type] || Bell;
-            const color = typeColor[n.type] || '#94a3b8';
-            return (
-              <div key={n._id} onClick={() => !n.isRead && markRead(n._id)}
-                style={{ padding: '0.75rem', borderRadius: '12px', marginBottom: '0.4rem', cursor: n.isRead ? 'default' : 'pointer', background: n.isRead ? 'rgba(255,255,255,0.02)' : `${color}10`, border: `1px solid ${n.isRead ? 'rgba(255,255,255,0.05)' : color + '30'}`, transition: 'all 0.2s' }}>
-                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
-                  <div style={{ padding: '0.35rem', background: `${color}20`, borderRadius: '7px', flexShrink: 0 }}><Icon size={13} color={color} /></div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <p style={{ fontSize: '0.83rem', fontWeight: n.isRead ? '500' : '700', margin: 0 }}>{n.title}</p>
-                      {!n.isRead && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, flexShrink: 0 }} />}
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.2rem 0 0', lineHeight: 1.4 }}>{n.message}</p>
-                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0.3rem 0 0' }}>{new Date(n.createdAt).toLocaleString()}</p>
-                  </div>
+          <div className="kl-dropdown-content">
+            {notifications.length === 0 ? <p className="kl-empty-text">No alerts</p> : 
+              notifications.map(n => (
+                <div key={n._id} onClick={() => !n.isRead && markRead(n._id)} className={`kl-notif-item ${n.isRead ? 'read' : ''}`}>
+                  <p className="kl-notif-title">{n.title}</p>
+                  <p className="kl-notif-msg">{n.message}</p>
                 </div>
-              </div>
-            );
-          })}
+              ))
+            }
+          </div>
         </div>
       )}
     </div>
@@ -106,17 +77,34 @@ const AdminNotificationBell = () => {
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, deleteNotification, markAllAsRead } = useNotifications();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [conversations, setConversations] = useState([]);
   const notificationRef = useRef(null);
 
   useEffect(() => {
+    if (user) {
+        fetchConversations();
+    }
+  }, [user]);
+
+  const fetchConversations = async () => {
+    try {
+        const res = await axios.get('/chat/conversations');
+        if (res.data.success) {
+            setConversations(res.data.data);
+        }
+    } catch (err) {
+        console.error('Failed to fetch conversations for navbar', err);
+    }
+  };
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setShowNotifications(false);
-      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) setShowNotifications(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -127,175 +115,186 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
   return (
     <>
-      <nav className="navbar-container">
-
-      <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 'var(--nav-gap, 2rem)', flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-          <Gift color="var(--accent-primary)" size={24} />
-          <Link 
-            to={user ? (user.role === 'buyer' ? '/buyer-dashboard' : user.role === 'creator' ? '/creator-dashboard' : '/admin-dashboard') : '/'} 
-            className="nav-logo-text"
-            style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontFamily: 'Outfit', textDecoration: 'none', fontSize: '1.25rem' }}
-          >
-            Gift<span className="text-gradient">Kart</span>
-          </Link>
+      <nav className="kl-nav">
+        <div className="kl-nav-left">
+          <Link to="/" className="kl-nav-logo">GiftKart</Link>
+          
+          <div className={`kl-nav-links ${isMenuOpen ? 'active' : ''}`}>
+            {user ? (
+              <>
+                <Link to={user.role === 'admin' ? '/admin-dashboard' : user.role === 'buyer' ? '/buyer-dashboard' : '/creator-dashboard'}>Dashboard</Link>
+                {user.role === 'buyer' && (
+                  <>
+                    <Link to="/vibe-coder" style={{ color: 'var(--accent)', fontWeight: '800' }}>
+                      <Sparkles size={14} style={{ marginRight: '4px' }} /> Vibe-Coder
+                    </Link>
+                    <Link to="/inspiration">Inspiration</Link>
+                    <Link to="/social-wishlist">Social</Link>
+                    <Link to="/auto-gifting">Calendar</Link>
+                    <Link to="/wishlist">Wishlist</Link>
+                    <Link to="/orders">Orders</Link>
+                  </>
+                )}
+                {(user.role === 'creator') && (
+                  <>
+                    <Link to="/buyer-dashboard">Marketplace</Link>
+                    <Link to="/profile">Studio Settings</Link>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <Link to="/buyer-dashboard">Marketplace</Link>
+                    <Link to="/inspiration">Inspiration</Link>
+              </>
+            )}
+          </div>
         </div>
 
-        {user?.role === 'buyer' && (
-          <div className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
-            <Link to="/buyer-dashboard" onClick={() => setIsMenuOpen(false)} className="nav-link">Marketplace</Link>
-            <Link to="/social-wishlist" onClick={() => setIsMenuOpen(false)} className="nav-link">
-              <Users size={16} color="var(--accent-primary)" /> Social Wishlist
-            </Link>
-            <Link to="/auto-gifting" onClick={() => setIsMenuOpen(false)} className="nav-link">
-              <Calendar size={16} color="var(--accent-secondary)" /> Calendar
-            </Link>
-            <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="nav-link">
-              <Heart size={16} color="#ef4444" /> Wishlist
-            </Link>
-            <Link to="/orders" onClick={() => setIsMenuOpen(false)} className="nav-link">My Orders</Link>
-            
-            <div className="mobile-only" style={{ marginTop: 'auto', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}>
-               <button onClick={handleLogout} className="btn btn-secondary w-full" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                <LogOut size={16} /> Logout
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        <div className="kl-nav-right">
+          <button onClick={toggleTheme} className="kl-nav-icon-btn">
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--nav-gap, 1rem)' }}>
-
-        {user ? (
-          <>
-            <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {localStorage.getItem('activeScheduleId') && (
-                <div style={{ 
-                  background: 'rgba(139, 92, 246, 0.1)', 
-                  padding: '0.4rem 1rem', 
-                  borderRadius: '20px', 
-                  border: '1px solid var(--accent-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.8rem'
-                }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Shopping for:</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--accent-secondary)' }}>{localStorage.getItem('activeScheduleRecipient')}</span>
-                  <button 
-                    onClick={() => {
-                      localStorage.removeItem('activeScheduleId');
-                      localStorage.removeItem('activeScheduleRecipient');
-                      navigate(0);
-                    }}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {user?.role === 'admin' && <AdminNotificationBell />}
-              {user?.role !== 'admin' && (
-                <div style={{ position: 'relative' }} ref={notificationRef}>
-                  <button onClick={() => setShowNotifications(!showNotifications)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', position: 'relative', padding: '0.5rem' }}>
-                    <Bell size={24} />
-                    {unreadCount > 0 && <span style={{ position: 'absolute', top: '2px', right: '2px', background: 'var(--danger)', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--bg-secondary)' }}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
-                  </button>
-                  {showNotifications && (
-                    <div className="glass-panel" style={{ position: 'absolute', top: '100%', right: 0, width: '320px', maxWidth: '90vw', maxHeight: '450px', marginTop: '0.5rem', overflowY: 'auto', zIndex: 1100, boxShadow: '0 10px 25px rgba(0,0,0,0.5)', padding: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', margin: 0 }}>Notifications</h3>
-                        <button onClick={markAllAsRead} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', cursor: 'pointer' }}>Mark all read</button>
-                      </div>
-                      {notifications.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {notifications.map(n => (
-                            <div key={n._id} style={{ padding: '0.75rem', borderRadius: '8px', background: n.read ? 'rgba(255,255,255,0.02)' : 'rgba(139, 92, 246, 0.05)', border: n.read ? '1px solid transparent' : '1px solid rgba(139, 92, 246, 0.2)', position: 'relative' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.25rem 0', color: n.read ? 'var(--text-muted)' : 'var(--text-primary)' }}>{n.title}</h4>
-                                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                  {!n.read && <button onClick={() => markAsRead(n._id)} style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer' }}><Check size={14} /></button>}
-                                  <button onClick={() => deleteNotification(n._id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                </div>
-                              </div>
-                              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>{n.message}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                          <Bell size={32} style={{ opacity: 0.2, marginBottom: '0.5rem' }} />
-                          <p style={{ fontSize: '0.9rem' }}>No new notifications</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {user?.role !== 'admin' && (
-                <button 
-                    id="nav-message-btn"
-                    onClick={() => setShowChat(!showChat)} 
-                    style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', position: 'relative', padding: '0.5rem', transition: 'transform 0.2s' }}
-                    className="hover:scale-110"
-                >
-                    <MessageSquare size={24} color={showChat ? 'var(--accent-primary)' : 'var(--text-primary)'} />
-                    {unreadCount > 0 && <span style={{ position: 'absolute', top: '2px', right: '2px', background: 'var(--accent-primary)', color: 'white', borderRadius: '50%', width: '12px', height: '12px', border: '2px solid var(--bg-secondary)' }}></span>}
+          {user ? (
+            <>
+              {user.role === 'admin' && <AdminNotificationBell />}
+              
+              <div style={{ position: 'relative' }} ref={notificationRef}>
+                <button onClick={() => setShowNotifications(!showNotifications)} className="kl-nav-icon-btn">
+                  <Bell size={20} />
+                  {unreadCount > 0 && <span className="kl-notif-dot"></span>}
                 </button>
-              )}
+                {showNotifications && (
+                  <div className="glass-panel kl-dropdown">
+                    <div className="kl-dropdown-header">
+                      <h3>Notifications</h3>
+                      <button onClick={markAllAsRead}>Clear all</button>
+                    </div>
+                    <div className="kl-dropdown-content">
+                      {notifications.length === 0 ? <p className="kl-empty-text">No notifications</p> : 
+                        notifications.map(n => (
+                          <div key={n._id} className="kl-notif-item">
+                            <p className="kl-notif-title">{n.title}</p>
+                            <p className="kl-notif-msg">{n.message}</p>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {user?.role === 'buyer' && (
-                <Link to="/cart" style={{ color: 'var(--text-primary)', position: 'relative', display: 'flex', alignItems: 'center', padding: '0.5rem' }}>
-                  <ShoppingCart size={24} />
+              <button 
+                onClick={() => setShowChat(!showChat)} 
+                className="kl-nav-icon-btn hover-scale"
+                style={{ position: 'relative', color: showChat ? 'var(--accent)' : 'var(--text-muted)' }}
+                title="Chats"
+              >
+                <MessageSquare size={20} />
+                {conversations?.some(c => c.unread) && <span className="kl-notif-dot" style={{ background: 'var(--accent)' }}></span>}
+              </button>
+
+              {user.role === 'buyer' && (
+                <Link to="/wallet" className="kl-nav-icon-btn" title="My Wallet">
+                  <Wallet size={20} />
                 </Link>
               )}
 
-              <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}>
-                <div style={{ background: 'rgba(139, 92, 246, 0.2)', width: '35px', height: '35px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {user.avatar ? <img src={user.avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={18} color="var(--accent-primary)" />}
-                </div>
-                <div className="desktop-only" style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontWeight: '600', fontSize: '0.8rem' }}>{user.displayName || user.name || 'User'}</span>
-                </div>
+              <Link to="/cart" className="kl-nav-icon-btn">
+                <ShoppingBag size={20} />
               </Link>
-              
-              <div className="desktop-only">
-                <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <LogOut size={14} /> Logout
-                </button>
+
+              <div className="kl-user-profile">
+                <Link to="/profile" className="kl-profile-trigger">
+                  <div className="kl-avatar">
+                    {user.avatar ? <img src={user.avatar} alt="" /> : <UserIcon size={16} />}
+                  </div>
+                  <span className="kl-username">{user.displayName || user.name}</span>
+                </Link>
+                <button onClick={handleLogout} className="kl-logout-btn"><LogOut size={14} /></button>
               </div>
-
-              {/* Hamburger Button */}
-              <button className="mobile-only" onClick={toggleMenu} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: '0.5rem' }}>
-                {isMenuOpen ? <X size={28} /> : <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ width: '24px', height: '2px', background: 'var(--text-primary)', borderRadius: '2px' }}></div>
-                  <div style={{ width: '24px', height: '2px', background: 'var(--text-primary)', borderRadius: '2px' }}></div>
-                  <div style={{ width: '24px', height: '2px', background: 'var(--text-primary)', borderRadius: '2px' }}></div>
-                </div>}
-              </button>
+            </>
+          ) : (
+            <div className="kl-auth-btns">
+              <Link to="/login" className="kl-signin-link">Sign In</Link>
+              <Link to="/register" className="btn btn-primary">Join</Link>
             </div>
-          </>
-        ) : (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Link to="/login" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Login</Link>
-            <Link to="/register" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Sign Up</Link>
-          </div>
-        )}
-      </div>
+          )}
 
+          <button className="kl-mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={24} /> : <div className="kl-hamburger"><span></span><span></span></div>}
+          </button>
+        </div>
       </nav>
 
-      {/* Floating Global Chat Drawer */}
       {showChat && <GlobalChatDrawer onClose={() => setShowChat(false)} />}
-
+      
+      <style>{`
+        .kl-nav-left { display: flex; align-items: center; gap: 3rem; }
+        .kl-nav-links { display: flex; gap: 2rem; }
+        .kl-nav-links a { 
+          font-size: 0.75rem; 
+          text-transform: uppercase; 
+          letter-spacing: 0.1em; 
+          color: var(--text-muted); 
+          position: relative;
+          padding: 0.5rem 0;
+          transition: color 0.3s ease;
+        }
+        .kl-nav-links a::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 0;
+          height: 1px;
+          background: var(--text);
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .kl-nav-links a:hover { color: var(--text); }
+        .kl-nav-links a:hover::after { width: 100%; }
+        
+        .kl-nav-icon-btn { color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 0.5rem; transition: var(--transition); }
+        .kl-nav-icon-btn:hover { color: var(--text); transform: translateY(-1px); }
+        
+        .kl-notif-dot { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; background: var(--text); border-radius: 50%; }
+        
+        .kl-dropdown { position: absolute; top: 110%; right: 0; width: 300px; border-radius: var(--radius-md); padding: 1rem; z-index: 1100; }
+        .kl-dropdown-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        .kl-dropdown-header h3 { font-size: 0.9rem; }
+        .kl-dropdown-header button { font-size: 0.7rem; color: var(--text-muted); }
+        
+        .kl-notif-item { padding: 0.8rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem; transition: var(--transition); }
+        .kl-notif-item:hover { background: var(--bg-tertiary); }
+        .kl-notif-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.2rem; }
+        .kl-notif-msg { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+        .kl-empty-text { font-size: 0.8rem; color: var(--text-light); text-align: center; padding: 2rem 0; }
+        
+        .kl-user-profile { display: flex; align-items: center; gap: 1rem; margin-left: 1rem; }
+        .kl-profile-trigger { display: flex; align-items: center; gap: 0.5rem; }
+        .kl-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .kl-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .kl-username { font-size: 0.85rem; font-weight: 500; }
+        .kl-logout-btn { color: var(--text-light); }
+        .kl-logout-btn:hover { color: var(--text); }
+        
+        .kl-auth-btns { display: flex; align-items: center; gap: 1.5rem; }
+        .kl-signin-link { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+        .kl-signin-link:hover { color: var(--text); }
+        
+        .kl-mobile-menu-btn { display: none; }
+        
+        @media (max-width: 768px) {
+          .kl-nav-links { display: none; }
+          .kl-username { display: none; }
+          .kl-mobile-menu-btn { display: block; margin-left: 1rem; }
+          .kl-hamburger { display: flex; flex-direction: column; gap: 4px; }
+          .kl-hamburger span { width: 18px; height: 2px; background: var(--text); }
+        }
+      `}</style>
     </>
   );
 };

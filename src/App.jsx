@@ -11,6 +11,7 @@ import { SocketProvider } from './context/SocketContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import NotFound from './pages/NotFound';
 import AdminLayout from './layouts/AdminLayout';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -23,19 +24,7 @@ import AdminWalletPage from './pages/admin/AdminWallet';
 import AdminWithdrawals from './pages/admin/AdminWithdrawals';
 import BuyerDashboard from './pages/BuyerDashboard';
 import CreatorDashboard from './pages/CreatorDashboard';
-import SellerLogin from './pages/SellerLogin';
-import SellerRegister from './pages/SellerRegister';
-
-// Seller Layout & Pages (Phase 1)
-import SellerLayout from './layouts/SellerLayout';
-import SellerDashboardHome from './pages/seller/SellerDashboardHome';
-import SellerProducts from './pages/seller/SellerProducts';
-import SellerOrders from './pages/seller/SellerOrders';
-import SellerAnalytics from './pages/seller/SellerAnalytics';
-import SellerAI from './pages/seller/SellerAI';
-import SellerSettings from './pages/seller/SellerSettings';
-import SellerWallet from './pages/seller/SellerWallet';
-
+import BuyerWallet from './pages/BuyerWallet';
 // Creator Layout & Pages
 import CreatorLayout from './layouts/CreatorLayout';
 import CreatorProducts from './pages/creator/CreatorProducts';
@@ -46,6 +35,7 @@ import EditProduct from './pages/creator/EditProduct';
 import CreatorAI from './pages/creator/CreatorAI';
 import CreatorDashboardHome from './pages/creator/CreatorDashboardHome';
 import CreatorRevenue from './pages/creator/CreatorRevenue';
+import DesignCanvas from './pages/creator/DesignCanvas';
 
 import AIChat from './pages/AIChat';
 import GiftingAI from './pages/GiftingAI';
@@ -60,7 +50,11 @@ import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
 import SocialWishlist from './pages/SocialWishlist';
 import PublicWishlist from './pages/PublicWishlist';
+import VibeCoder from './pages/VibeCoder';
+import InspirationGallery from './pages/InspirationGallery';
+import Checkout from './pages/Checkout';
 import ForgotPassword from './pages/ForgotPassword';
+import FloatingAI from './components/FloatingAI';
 
 // Dummy components for other routes to prevent errors
 const DummyPage = ({ title }) => (
@@ -87,8 +81,6 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/seller-login" element={<SellerLogin />} />
-      <Route path="/seller-register" element={<SellerRegister />} />
       
       {/* Redirect /admin → /admin-dashboard for backwards compatibility */}
       <Route path="/admin" element={<Navigate to="/admin-dashboard" replace />} />
@@ -113,7 +105,7 @@ const AppRoutes = () => {
       
       {/* Creator Routes */}
       <Route path="/creator-dashboard" element={
-        <ProtectedRoute allowedRoles={['creator', 'seller']}>
+        <ProtectedRoute allowedRoles={['creator', 'admin']}>
           <CreatorLayout />
         </ProtectedRoute>
       }>
@@ -125,22 +117,9 @@ const AppRoutes = () => {
         <Route path="wallet" element={<CreatorWallet />} />
         <Route path="revenue" element={<CreatorRevenue />} />
         <Route path="ai" element={<CreatorAI />} />
+        <Route path="canvas/:conceptId?" element={<DesignCanvas />} />
       </Route>
 
-        {/* Seller Routes */}
-        <Route path="/seller-dashboard/*" element={
-          <ProtectedRoute allowedRoles={['seller']}>
-            <SellerLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<SellerDashboardHome />} />
-          <Route path="products" element={<SellerProducts />} />
-          <Route path="orders" element={<SellerOrders />} />
-          <Route path="analytics" element={<SellerAnalytics />} />
-          <Route path="wallet" element={<SellerWallet />} />
-          <Route path="ai" element={<SellerAI />} />
-          <Route path="settings" element={<SellerSettings />} />
-        </Route>
 
       {/* AI Routes */}
       <Route path="/ai-chat" element={
@@ -164,6 +143,8 @@ const AppRoutes = () => {
       {/* Shopping Routes */}
       <Route path="/wishlist/:wishlistId" element={<PublicWishlist />} />
       <Route path="/product/:id" element={<ProductDetails />} />
+      <Route path="/inspiration" element={<InspirationGallery />} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/cart" element={
         <ProtectedRoute allowedRoles={['buyer']}>
           <Cart />
@@ -205,29 +186,44 @@ const AppRoutes = () => {
           <SocialWishlist />
         </ProtectedRoute>
       } />
-      <Route path="/wallet" element={<DummyPage title="Wallet" />} />
+      <Route path="/vibe-coder" element={
+        <ProtectedRoute allowedRoles={['buyer', 'creator', 'admin']}>
+          <VibeCoder />
+        </ProtectedRoute>
+      } />
+      <Route path="/wallet" element={
+        <ProtectedRoute allowedRoles={['buyer']}>
+          <BuyerWallet />
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
+
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   // Using a dummy client ID if not provided in env. For production, this should be in .env
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || '1234567890-dummy.apps.googleusercontent.com';
 
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <AuthProvider>
-        <SocketProvider>
-          <NotificationProvider>
-            <ToastProvider>
-              <Router>
-                <AppRoutes />
-              </Router>
-            </ToastProvider>
-          </NotificationProvider>
-        </SocketProvider>
-      </AuthProvider>
-    </GoogleOAuthProvider>
+    <ThemeProvider>
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <AuthProvider>
+          <SocketProvider>
+            <NotificationProvider>
+              <ToastProvider>
+                <Router>
+                  <AppRoutes />
+                  <FloatingAI />
+                </Router>
+              </ToastProvider>
+            </NotificationProvider>
+          </SocketProvider>
+        </AuthProvider>
+      </GoogleOAuthProvider>
+    </ThemeProvider>
   );
 }
 
